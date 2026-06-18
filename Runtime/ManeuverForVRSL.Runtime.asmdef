@@ -1,0 +1,19 @@
+{
+  "name": "ManeuverForVRSL.Runtime",
+  "rootNamespace": "ManeuverForVRSL",
+  "references": [
+    "Iridescenent.SLM.Runtime",
+    "VRSL.Core",
+    "VRC.SDKBase",
+    "UdonSharp.Runtime"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

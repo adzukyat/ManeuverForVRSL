@@ -1,0 +1,13 @@
+.DS_Store
+*.user
+*.tmp
+*.log
+/.idea/
+/.vscode/
+/Library/
+/Logs/
+/Temp/
+/Obj/
+/Build/
+/Builds/
+/TestResults/

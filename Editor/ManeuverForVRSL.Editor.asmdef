@@ -1,0 +1,23 @@
+{
+  "name": "ManeuverForVRSL.Editor",
+  "rootNamespace": "ManeuverForVRSL.Editor",
+  "references": [
+    "ManeuverForVRSL.Runtime",
+    "Iridescenent.SLM.Runtime",
+    "VRSL.Core",
+    "VRC.SDKBase",
+    "UdonSharp.Runtime",
+    "Unity.Timeline"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

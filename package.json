@@ -1,0 +1,15 @@
+{
+  "name": "me.adzuki.maneuver-for-vrsl",
+  "version": "0.1.0",
+  "displayName": "Maneuver For VRSL",
+  "description": "VRSL adapter, baker, and runtime player for Stage Light Maneuver timelines in VRChat worlds.",
+  "unity": "2022.3",
+  "author": {
+    "name": "Adzukyat"
+  },
+  "dependencies": {
+    "jp.iridescent.stagelightmaneuver": "1.0.2",
+    "com.acchosen.vr-stage-lighting": "2.8.4",
+    "com.vrchat.worlds": "3.10.2"
+  }
+}

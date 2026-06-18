@@ -1,0 +1,26 @@
+{
+  "name": "ManeuverForVRSL.EditorTests",
+  "rootNamespace": "ManeuverForVRSL.Tests",
+  "references": [
+    "ManeuverForVRSL.Runtime",
+    "ManeuverForVRSL.Editor",
+    "Iridescenent.SLM.Runtime",
+    "VRSL.Core",
+    "VRC.SDKBase",
+    "UdonSharp.Runtime",
+    "Unity.Timeline",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
