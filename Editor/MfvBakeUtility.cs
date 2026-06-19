@@ -287,28 +287,46 @@ namespace ManeuverForVRSL.Editor
                 return null;
             }
 
-            var uploadTimeline = ScriptableObject.CreateInstance<TimelineAsset>();
-            uploadTimeline.name = $"{sourceTimeline.name}_MfvUpload";
-            var path = AssetDatabase.GenerateUniqueAssetPath($"{outputFolder}/{SanitizeAssetName(uploadTimeline.name)}.playable");
-            AssetDatabase.CreateAsset(uploadTimeline, path);
-            uploadTimeline.durationMode = sourceTimeline.durationMode;
-            uploadTimeline.fixedDuration = sourceTimeline.fixedDuration;
-
-            foreach (var sourceTrack in sourceTimeline.GetRootTracks().Where(track => !(track is StageLightTimelineTrack)))
+            var sourcePath = AssetDatabase.GetAssetPath(sourceTimeline);
+            if (string.IsNullOrEmpty(sourcePath))
             {
-                try
-                {
-                    uploadTimeline.CreateTrack(sourceTrack.GetType(), null, sourceTrack.name);
-                }
-                catch (System.Exception exception)
-                {
-                    Debug.LogWarning($"Skipped copying upload timeline track '{sourceTrack.name}' ({sourceTrack.GetType().Name}): {exception.Message}");
-                }
+                Debug.LogError($"[ManeuverForVRSL] Cannot create upload Timeline because '{sourceTimeline.name}' is not saved as an asset.", sourceTimeline);
+                return null;
+            }
+
+            var uploadName = $"{sourceTimeline.name}_MfvUpload";
+            var path = AssetDatabase.GenerateUniqueAssetPath($"{outputFolder}/{SanitizeAssetName(uploadName)}.playable");
+            if (!AssetDatabase.CopyAsset(sourcePath, path))
+            {
+                Debug.LogError($"[ManeuverForVRSL] Failed to copy Timeline asset from '{sourcePath}' to '{path}'.", sourceTimeline);
+                return null;
+            }
+
+            AssetDatabase.ImportAsset(path);
+            var uploadTimeline = AssetDatabase.LoadAssetAtPath<TimelineAsset>(path);
+            if (uploadTimeline == null)
+            {
+                Debug.LogError($"[ManeuverForVRSL] Copied upload Timeline could not be loaded from '{path}'.", sourceTimeline);
+                return null;
+            }
+
+            uploadTimeline.name = uploadName;
+            foreach (var slmTrack in GetAllTracks(uploadTimeline).Where(track => track is StageLightTimelineTrack).ToArray())
+            {
+                uploadTimeline.DeleteTrack(slmTrack);
             }
 
             EditorUtility.SetDirty(uploadTimeline);
             AssetDatabase.SaveAssets();
             return uploadTimeline;
+        }
+
+        private static IEnumerable<TrackAsset> GetAllTracks(TimelineAsset timeline)
+        {
+            return timeline.GetRootTracks()
+                .Concat(timeline.GetOutputTracks())
+                .Concat(timeline.outputs.Select(output => output.sourceObject).OfType<TrackAsset>())
+                .Distinct();
         }
 
         private static void EnsureFolder(string folder)

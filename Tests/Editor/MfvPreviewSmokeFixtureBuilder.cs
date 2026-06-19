@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using ManeuverForVRSL.Editor;
 using StageLightManeuver;
@@ -8,7 +9,6 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.SceneManagement;
-using UnityEngine.TestTools;
 using UnityEngine.Timeline;
 using VRSL;
 using Object = UnityEngine.Object;
@@ -18,6 +18,7 @@ namespace ManeuverForVRSL.Tests
     internal static class MfvPreviewSmokeFixtureBuilder
     {
         public const string FolderPath = "Assets/MfvTestFixtures";
+        public const string BakeOutputRoot = FolderPath + "/Baked";
         public const string ScenePath = FolderPath + "/PreviewSmoke.unity";
         public const string TimelinePath = FolderPath + "/PreviewSmoke.playable";
         public const float PreviewTime = 1f;
@@ -27,6 +28,10 @@ namespace ManeuverForVRSL.Tests
         public const float ExpectedConeWidth = 2.75f;
         public const float ExpectedConeLength = 5.25f;
         public const int ExpectedGobo = 4;
+        public const double ExpectedActivationStart = 0.25;
+        public const double ExpectedActivationDuration = 1.25;
+        public const double ExpectedAnimationStart = 0.5;
+        public const double ExpectedAnimationDuration = 1.0;
         public static readonly Color ExpectedColor = new Color(0.25f, 0.5f, 1f, 1f);
 
         [MenuItem("ManeuverForVRSL/Tests/Regenerate Preview Smoke Fixture")]
@@ -36,11 +41,11 @@ namespace ManeuverForVRSL.Tests
             AssetDatabase.DeleteAsset(ScenePath);
             AssetDatabase.DeleteAsset(TimelinePath);
 
-            var timeline = CreateTimelineAsset(out var slmTrack);
+            var timeline = CreateTimelineAsset(out var slmTrack, out var activationTrack, out var animationTrack);
             AssetDatabase.SaveAssets();
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-            CreateSceneObjects(timeline, slmTrack);
+            CreateSceneObjects(timeline, slmTrack, activationTrack, animationTrack);
             EditorSceneManager.SaveScene(scene, ScenePath);
             AssetDatabase.SaveAssets();
         }
@@ -52,32 +57,13 @@ namespace ManeuverForVRSL.Tests
                 return;
             }
 
-            var ignoreFailingMessages = LogAssert.ignoreFailingMessages;
-            LogAssert.ignoreFailingMessages = true;
-            try
-            {
-                RegenerateAssets();
-            }
-            finally
-            {
-                LogAssert.ignoreFailingMessages = ignoreFailingMessages;
-            }
+            RegenerateAssets();
         }
 
         public static FixtureContext OpenFreshScene()
         {
             EnsureAssets();
-            var ignoreFailingMessages = LogAssert.ignoreFailingMessages;
-            LogAssert.ignoreFailingMessages = true;
-            try
-            {
-                EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            }
-            finally
-            {
-                LogAssert.ignoreFailingMessages = ignoreFailingMessages;
-            }
-
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             return FindContext();
         }
 
@@ -88,6 +74,23 @@ namespace ManeuverForVRSL.Tests
             context.Director.Evaluate();
             var after = FixtureState.Capture(context.Fixture);
             return new PreviewSample(before, after);
+        }
+
+        public static string CreateTemporaryBakeFolder()
+        {
+            CleanBakeOutputRoot();
+            var folder = $"{BakeOutputRoot}/Run_{Guid.NewGuid():N}";
+            EnsureFolder(folder);
+            return folder;
+        }
+
+        public static void CleanBakeOutputRoot()
+        {
+            if (AssetDatabase.IsValidFolder(BakeOutputRoot))
+            {
+                AssetDatabase.DeleteAsset(BakeOutputRoot);
+                AssetDatabase.SaveAssets();
+            }
         }
 
         public static string BuildDiagnostics(FixtureContext context, FixtureState before, FixtureState after)
@@ -156,7 +159,10 @@ namespace ManeuverForVRSL.Tests
             return FixtureState.Capture(context.Fixture);
         }
 
-        private static TimelineAsset CreateTimelineAsset(out StageLightTimelineTrack slmTrack)
+        private static TimelineAsset CreateTimelineAsset(
+            out StageLightTimelineTrack slmTrack,
+            out ActivationTrack activationTrack,
+            out AnimationTrack animationTrack)
         {
             var timeline = ScriptableObject.CreateInstance<TimelineAsset>();
             timeline.name = "PreviewSmoke";
@@ -172,8 +178,28 @@ namespace ManeuverForVRSL.Tests
             clip.duration = 2.0;
             ConfigureStageLightClip((StageLightTimelineClip)clip.asset);
 
-            timeline.CreateTrack<ActivationTrack>(null, "Activation Retained");
-            timeline.CreateTrack<AnimationTrack>(null, "Animation Retained");
+            activationTrack = timeline.CreateTrack<ActivationTrack>(null, "Activation Retained");
+            var activationClip = activationTrack.CreateDefaultClip();
+            activationClip.displayName = "Activation Retained Clip";
+            activationClip.start = ExpectedActivationStart;
+            activationClip.duration = ExpectedActivationDuration;
+
+            animationTrack = timeline.CreateTrack<AnimationTrack>(null, "Animation Retained");
+            var retainedAnimation = new AnimationClip
+            {
+                name = "PreviewSmoke Retained AnimationClip",
+                frameRate = 30f
+            };
+            AnimationUtility.SetEditorCurve(
+                retainedAnimation,
+                EditorCurveBinding.FloatCurve("", typeof(Transform), "m_LocalPosition.x"),
+                AnimationCurve.Linear(0f, 0f, 1f, 1f));
+            AssetDatabase.AddObjectToAsset(retainedAnimation, timeline);
+            var animationClip = animationTrack.CreateClip(retainedAnimation);
+            animationClip.displayName = "Animation Retained Clip";
+            animationClip.start = ExpectedAnimationStart;
+            animationClip.duration = ExpectedAnimationDuration;
+
             EditorUtility.SetDirty(timeline);
             return timeline;
         }
@@ -193,7 +219,11 @@ namespace ManeuverForVRSL.Tests
             };
         }
 
-        private static void CreateSceneObjects(TimelineAsset timeline, StageLightTimelineTrack slmTrack)
+        private static void CreateSceneObjects(
+            TimelineAsset timeline,
+            StageLightTimelineTrack slmTrack,
+            ActivationTrack activationTrack,
+            AnimationTrack animationTrack)
         {
             var directorObject = new GameObject("PreviewSmoke Director");
             var director = directorObject.AddComponent<PlayableDirector>();
@@ -225,6 +255,13 @@ namespace ManeuverForVRSL.Tests
             }
 
             director.SetGenericBinding(slmTrack, stageLightFixture);
+
+            var activationTarget = new GameObject("Retained Activation Target");
+            director.SetGenericBinding(activationTrack, activationTarget);
+
+            var animationTarget = new GameObject("Retained Animation Target");
+            var animator = animationTarget.AddComponent<Animator>();
+            director.SetGenericBinding(animationTrack, animator);
         }
 
         private static FixtureContext FindContext()
@@ -240,14 +277,31 @@ namespace ManeuverForVRSL.Tests
                 : null;
             var channel = binding != null ? binding.GetComponent<MfvVRSLFixtureChannel>() : null;
             var fixture = channel != null ? channel.vrslFixture : null;
+            var activationTrack = timeline != null ? FindTrack<ActivationTrack>(timeline) : null;
+            var animationTrack = timeline != null ? FindTrack<AnimationTrack>(timeline) : null;
 
-            return new FixtureContext(director, timeline, slmTrack, slmClip, binding, channel, fixture);
+            return new FixtureContext(director, timeline, slmTrack, slmClip, binding, channel, fixture, activationTrack, animationTrack);
         }
 
         private static bool HasCompleteAssets()
         {
             var timeline = AssetDatabase.LoadAssetAtPath<TimelineAsset>(TimelinePath);
-            return timeline != null && FindSlmTrack(timeline) != null && System.IO.File.Exists(ScenePath);
+            if (timeline == null || FindSlmTrack(timeline) == null || !File.Exists(ScenePath))
+            {
+                return false;
+            }
+
+            var activationTrack = FindTrack<ActivationTrack>(timeline);
+            var animationTrack = FindTrack<AnimationTrack>(timeline);
+            var animationPlayable = animationTrack != null
+                ? animationTrack.GetClips().Select(clip => clip.asset as AnimationPlayableAsset).FirstOrDefault(asset => asset != null)
+                : null;
+
+            return activationTrack != null &&
+                activationTrack.GetClips().Any() &&
+                animationPlayable != null &&
+                animationPlayable.clip != null &&
+                AnimationUtility.GetCurveBindings(animationPlayable.clip).Length > 0;
         }
 
         private static IEnumerable<TrackAsset> GetAllTracks(TimelineAsset timeline)
@@ -260,7 +314,13 @@ namespace ManeuverForVRSL.Tests
 
         private static StageLightTimelineTrack FindSlmTrack(TimelineAsset timeline)
         {
-            return GetAllTracks(timeline).OfType<StageLightTimelineTrack>().SingleOrDefault();
+            return FindTrack<StageLightTimelineTrack>(timeline);
+        }
+
+        private static T FindTrack<T>(TimelineAsset timeline)
+            where T : TrackAsset
+        {
+            return GetAllTracks(timeline).OfType<T>().SingleOrDefault();
         }
 
         private static LightIntensityProperty CreateIntensity(float value)
@@ -353,6 +413,8 @@ namespace ManeuverForVRSL.Tests
             public readonly StageLightFixture StageLightFixture;
             public readonly MfvVRSLFixtureChannel Channel;
             public readonly VRStageLighting_DMX_Static Fixture;
+            public readonly ActivationTrack ActivationTrack;
+            public readonly AnimationTrack AnimationTrack;
             public readonly string LastFrameBefore;
 
             public FixtureContext(
@@ -362,7 +424,9 @@ namespace ManeuverForVRSL.Tests
                 StageLightTimelineClip slmClip,
                 StageLightFixture stageLightFixture,
                 MfvVRSLFixtureChannel channel,
-                VRStageLighting_DMX_Static fixture)
+                VRStageLighting_DMX_Static fixture,
+                ActivationTrack activationTrack,
+                AnimationTrack animationTrack)
             {
                 Director = director;
                 Timeline = timeline;
@@ -371,6 +435,8 @@ namespace ManeuverForVRSL.Tests
                 StageLightFixture = stageLightFixture;
                 Channel = channel;
                 Fixture = fixture;
+                ActivationTrack = activationTrack;
+                AnimationTrack = animationTrack;
                 LastFrameBefore = channel != null ? FormatFrame(channel.lastFrame) : "<missing>";
             }
         }

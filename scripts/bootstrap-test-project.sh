@@ -76,6 +76,27 @@ patch_udonsharp_batchmode_guard() {
   fi
 }
 
+patch_udonsharp_runtime_watcher_batchmode_guard() {
+  local file="${PACKAGES_DIR}/com.vrchat.worlds/Integrations/UdonSharp/Editor/UdonSharpRuntimeLogWatcher.cs"
+  local marker="MFV test harness: skip VRChat runtime log watcher in batchmode."
+
+  if [[ ! -f "${file}" ]] || grep -q "${marker}" "${file}"; then
+    return 0
+  fi
+
+  if ! command -v perl >/dev/null 2>&1; then
+    echo "[bootstrap] perl is required to patch ${file}" >&2
+    exit 1
+  fi
+
+  perl -0pi -e 's/(public static void InitLogWatcher\(\)\s*\{\s*)EditorApplication\.update \+= OnEditorUpdate;/${1}\/\/ MFV test harness: skip VRChat runtime log watcher in batchmode.\n            if (Application.isBatchMode) return;\n\n            EditorApplication.update += OnEditorUpdate;/s' "${file}"
+
+  if ! grep -q "${marker}" "${file}"; then
+    echo "[bootstrap] Failed to patch UdonSharp runtime watcher batchmode guard in ${file}" >&2
+    exit 1
+  fi
+}
+
 download_package \
   "com.vrchat.base" \
   "https://github.com/vrchat/packages/releases/download/3.10.2/com.vrchat.base-3.10.2.zip" \
@@ -97,3 +118,4 @@ download_package \
   "7b2e7c3ae697d398a494aab022425f539ac2238ff87f01f27c7281b4af50529a"
 
 patch_udonsharp_batchmode_guard
+patch_udonsharp_runtime_watcher_batchmode_guard

@@ -28,6 +28,7 @@
 /TestProject~/Build/
 /TestProject~/Builds/
 /TestProject~/TestResults/
+/TestProject~/TestResults~/
 /TestProject~/UserSettings/
 /TestProject~/MemoryCaptures/
 /TestProject~/.audiolink_pipeline
@@ -37,6 +38,8 @@
 /TestProject~/Assets/MfvTestFixtures/Baked.meta
 /TestProject~/Assets/UdonSharp/
 /TestProject~/Assets/UdonSharp.meta
+/TestProject~/Assets/SerializedUdonPrograms/
+/TestProject~/Assets/SerializedUdonPrograms.meta
 /TestProject~/Assets/XR/
 /TestProject~/Assets/XR.meta
 /TestProject~/Assets/UniversalRenderPipelineGlobalSettings.asset

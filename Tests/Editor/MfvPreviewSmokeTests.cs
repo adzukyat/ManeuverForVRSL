@@ -3,6 +3,7 @@ using System.Linq;
 using ManeuverForVRSL.Editor;
 using NUnit.Framework;
 using StageLightManeuver;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.TestTools;
 using UnityEngine.Timeline;
@@ -17,11 +18,18 @@ namespace ManeuverForVRSL.Tests
             var context = MfvPreviewSmokeFixtureBuilder.OpenFreshScene();
             AssertPreviewContext(context);
 
+            MfvPreviewSmokeFixtureBuilder.ResetFixtureForRuntime(context);
+            context.Channel.lastFrame = MfvVRSLFrame.Default();
             var sample = MfvPreviewSmokeFixtureBuilder.EvaluatePreview(context, MfvPreviewSmokeFixtureBuilder.PreviewTime);
             yield return null;
 
             var diagnostics = MfvPreviewSmokeFixtureBuilder.BuildDiagnostics(context, sample.Before, sample.After);
+            AssertFixtureChanged(sample.Before, sample.After, diagnostics);
+            Assert.That(context.Channel.lastFrame.pan, Is.EqualTo(MfvPreviewSmokeFixtureBuilder.ExpectedPan).Within(0.0001f), diagnostics);
+            Assert.That(context.Channel.lastFrame.tilt, Is.EqualTo(MfvPreviewSmokeFixtureBuilder.ExpectedTilt).Within(0.0001f), diagnostics);
             Assert.That(context.Channel.lastFrame.intensity, Is.EqualTo(MfvPreviewSmokeFixtureBuilder.ExpectedIntensity).Within(0.0001f), diagnostics);
+            Assert.That(sample.After.Pan, Is.EqualTo(MfvPreviewSmokeFixtureBuilder.ExpectedPan).Within(0.0001f), diagnostics);
+            Assert.That(sample.After.Tilt, Is.EqualTo(MfvPreviewSmokeFixtureBuilder.ExpectedTilt).Within(0.0001f), diagnostics);
             Assert.That(sample.After.Intensity, Is.EqualTo(MfvPreviewSmokeFixtureBuilder.ExpectedIntensity).Within(0.0001f), diagnostics);
             Assert.That(sample.After.Color.r, Is.EqualTo(MfvPreviewSmokeFixtureBuilder.ExpectedColor.r).Within(0.0001f), diagnostics);
             Assert.That(sample.After.Color.g, Is.EqualTo(MfvPreviewSmokeFixtureBuilder.ExpectedColor.g).Within(0.0001f), diagnostics);
@@ -39,6 +47,7 @@ namespace ManeuverForVRSL.Tests
             var context = MfvPreviewSmokeFixtureBuilder.OpenFreshScene();
             AssertPreviewContext(context);
 
+            MfvPreviewSmokeFixtureBuilder.ResetFixtureForRuntime(context);
             var preview = MfvPreviewSmokeFixtureBuilder
                 .EvaluatePreview(context, MfvPreviewSmokeFixtureBuilder.PreviewTime)
                 .After;
@@ -46,63 +55,79 @@ namespace ManeuverForVRSL.Tests
 
             var settings = MfvBakeSettings.CreateDefault();
             settings.internalSampleRate = 30f;
-            var result = BakeIgnoringExternalSdkImportNoise(context, settings);
-            Object.DestroyImmediate(settings);
-
-            var afterBake = MfvPreviewSmokeFixtureBuilder.FixtureState.Capture(context.Fixture);
-            var diagnostics = MfvPreviewSmokeFixtureBuilder.BuildBakeDiagnostics(preview, result, afterBake, context);
-            Assert.NotNull(result, diagnostics);
-            Assert.NotNull(result.bakedAsset, diagnostics);
-            Assert.That(result.fixtures, Has.Length.EqualTo(1), diagnostics);
-            Assert.That(result.bakedAsset.FixtureCount, Is.EqualTo(1), diagnostics);
-            Assert.That(result.bakedAsset.ContinuousTrackCount, Is.GreaterThan(0), diagnostics);
-            Assert.That(result.bakedAsset.keyTimes, Is.Not.Empty, diagnostics);
-            Assert.That(result.bakedAsset.keyValues, Is.Not.Empty, diagnostics);
-            Assert.That(result.bakedAsset.EventTrackCount, Is.GreaterThan(0), diagnostics);
-            Assert.That(result.bakedAsset.eventTimes, Is.Not.Empty, diagnostics);
-            Assert.That(result.bakedAsset.eventValues, Is.Not.Empty, diagnostics);
-            Assert.NotNull(result.uploadTimeline, diagnostics);
-
-            var uploadTracks = result.uploadTimeline.GetOutputTracks().Concat(result.uploadTimeline.GetRootTracks()).ToArray();
-            Assert.IsFalse(uploadTracks.Any(track => track is StageLightTimelineTrack), diagnostics);
-            Assert.IsTrue(uploadTracks.Any(track => track is ActivationTrack), diagnostics);
-            Assert.IsTrue(uploadTracks.Any(track => track is AnimationTrack), diagnostics);
-            Assert.IsTrue(context.Timeline.GetOutputTracks().Any(track => track is StageLightTimelineTrack),
-                "Bake should not delete SLM tracks from the source Timeline.\n" + diagnostics);
-            AssertFixtureClose(stateBeforeBake, afterBake, "Bake should restore the source fixture state.", diagnostics);
-
-            var playerObject = new GameObject("Runtime Player");
+            var outputFolder = MfvPreviewSmokeFixtureBuilder.CreateTemporaryBakeFolder();
+            MfvBakeResult result = null;
             try
             {
-                var player = playerObject.AddComponent<MfvVRSLTimelinePlayer>();
-                MfvBakeUtility.ConfigurePlayer(player, context.Director, result);
-                MfvPreviewSmokeFixtureBuilder.ResetFixtureForRuntime(context);
-                player.EvaluateAt(MfvPreviewSmokeFixtureBuilder.PreviewTime);
-                var runtime = MfvPreviewSmokeFixtureBuilder.FixtureState.Capture(context.Fixture);
-                diagnostics = MfvPreviewSmokeFixtureBuilder.BuildBakeDiagnostics(preview, result, runtime, context);
+                result = BakePreviewFixture(context, settings, outputFolder);
 
-                AssertFixtureClose(preview, runtime, "Runtime player should match real Timeline preview at the sampled time.", diagnostics);
+                var afterBake = MfvPreviewSmokeFixtureBuilder.FixtureState.Capture(context.Fixture);
+                var diagnostics = MfvPreviewSmokeFixtureBuilder.BuildBakeDiagnostics(preview, result, afterBake, context);
+                Assert.NotNull(result, diagnostics);
+                Assert.NotNull(result.bakedAsset, diagnostics);
+                Assert.That(result.fixtures, Has.Length.EqualTo(1), diagnostics);
+                Assert.That(result.bakedAsset.FixtureCount, Is.EqualTo(1), diagnostics);
+                Assert.That(result.bakedAsset.ContinuousTrackCount, Is.GreaterThan(0), diagnostics);
+                Assert.That(result.bakedAsset.keyTimes, Is.Not.Empty, diagnostics);
+                Assert.That(result.bakedAsset.keyValues, Is.Not.Empty, diagnostics);
+                Assert.That(result.bakedAsset.EventTrackCount, Is.GreaterThan(0), diagnostics);
+                Assert.That(result.bakedAsset.eventTimes, Is.Not.Empty, diagnostics);
+                Assert.That(result.bakedAsset.eventValues, Is.Not.Empty, diagnostics);
+                Assert.NotNull(result.uploadTimeline, diagnostics);
+
+                var uploadTracks = GetAllTracks(result.uploadTimeline);
+                Assert.IsFalse(uploadTracks.Any(track => track is StageLightTimelineTrack), diagnostics);
+                var uploadActivation = uploadTracks.OfType<ActivationTrack>().SingleOrDefault();
+                var uploadAnimation = uploadTracks.OfType<AnimationTrack>().SingleOrDefault();
+                AssertRetainedTrackClips(
+                    context.ActivationTrack,
+                    uploadActivation,
+                    MfvPreviewSmokeFixtureBuilder.ExpectedActivationStart,
+                    MfvPreviewSmokeFixtureBuilder.ExpectedActivationDuration,
+                    "ActivationTrack",
+                    diagnostics);
+                AssertRetainedTrackClips(
+                    context.AnimationTrack,
+                    uploadAnimation,
+                    MfvPreviewSmokeFixtureBuilder.ExpectedAnimationStart,
+                    MfvPreviewSmokeFixtureBuilder.ExpectedAnimationDuration,
+                    "AnimationTrack",
+                    diagnostics);
+                AssertAnimationClipCurvesRetained(uploadAnimation, diagnostics);
+                Assert.IsTrue(context.Timeline.GetOutputTracks().Any(track => track is StageLightTimelineTrack),
+                    "Bake should not delete SLM tracks from the source Timeline.\n" + diagnostics);
+                AssertFixtureClose(stateBeforeBake, afterBake, "Bake should restore the source fixture state.", diagnostics);
+
+                var playerObject = new GameObject("Runtime Player");
+                try
+                {
+                    var player = playerObject.AddComponent<MfvVRSLTimelinePlayer>();
+                    MfvBakeUtility.ConfigurePlayer(player, context.Director, result);
+                    MfvPreviewSmokeFixtureBuilder.ResetFixtureForRuntime(context);
+                    player.EvaluateAt(MfvPreviewSmokeFixtureBuilder.PreviewTime);
+                    var runtime = MfvPreviewSmokeFixtureBuilder.FixtureState.Capture(context.Fixture);
+                    diagnostics = MfvPreviewSmokeFixtureBuilder.BuildBakeDiagnostics(preview, result, runtime, context);
+
+                    AssertFixtureClose(preview, runtime, "Runtime player should match real Timeline preview at the sampled time.", diagnostics);
+                }
+                finally
+                {
+                    Object.DestroyImmediate(playerObject);
+                }
             }
             finally
             {
-                Object.DestroyImmediate(playerObject);
+                Object.DestroyImmediate(settings);
+                MfvPreviewSmokeFixtureBuilder.CleanBakeOutputRoot();
             }
         }
 
-        private static MfvBakeResult BakeIgnoringExternalSdkImportNoise(
+        private static MfvBakeResult BakePreviewFixture(
             MfvPreviewSmokeFixtureBuilder.FixtureContext context,
-            MfvBakeSettings settings)
+            MfvBakeSettings settings,
+            string outputFolder)
         {
-            var ignoreFailingMessages = LogAssert.ignoreFailingMessages;
-            LogAssert.ignoreFailingMessages = true;
-            try
-            {
-                return MfvBakeUtility.Bake(context.Director, settings, MfvPreviewSmokeFixtureBuilder.FolderPath + "/Baked");
-            }
-            finally
-            {
-                LogAssert.ignoreFailingMessages = ignoreFailingMessages;
-            }
+            return MfvBakeUtility.Bake(context.Director, settings, outputFolder);
         }
 
         private static void AssertPreviewContext(MfvPreviewSmokeFixtureBuilder.FixtureContext context)
@@ -115,6 +140,8 @@ namespace ManeuverForVRSL.Tests
             Assert.NotNull(context.StageLightFixture, "PreviewSmoke SLM track is not bound to a StageLightFixture.");
             Assert.NotNull(context.Channel, "PreviewSmoke Fixture has no MfvVRSLFixtureChannel.");
             Assert.NotNull(context.Channel.vrslFixture, "PreviewSmoke channel.vrslFixture is null.");
+            Assert.NotNull(context.ActivationTrack, "PreviewSmoke Timeline has no retained ActivationTrack.");
+            Assert.NotNull(context.AnimationTrack, "PreviewSmoke Timeline has no retained AnimationTrack.");
             Assert.NotNull(context.SlmClip.StageLightQueueData.TryGetActiveProperty<ClockProperty>(),
                 "PreviewSmoke SLM queue has no active ClockProperty; MfvVRSLFrameEvaluator will ignore the queue.");
         }
@@ -136,6 +163,59 @@ namespace ManeuverForVRSL.Tests
             Assert.That(actual.Gobo, Is.EqualTo(expected.Gobo), reason + "\n" + diagnostics);
             Assert.That(actual.EnableDmx, Is.EqualTo(expected.EnableDmx), reason + "\n" + diagnostics);
             Assert.That(actual.EnableStrobe, Is.EqualTo(expected.EnableStrobe), reason + "\n" + diagnostics);
+        }
+
+        private static void AssertFixtureChanged(
+            MfvPreviewSmokeFixtureBuilder.FixtureState before,
+            MfvPreviewSmokeFixtureBuilder.FixtureState after,
+            string diagnostics)
+        {
+            Assert.That(Mathf.Abs(after.Pan - before.Pan), Is.GreaterThan(0.001f), "Preview should change pan.\n" + diagnostics);
+            Assert.That(Mathf.Abs(after.Tilt - before.Tilt), Is.GreaterThan(0.001f), "Preview should change tilt.\n" + diagnostics);
+            Assert.That(Mathf.Abs(after.Intensity - before.Intensity), Is.GreaterThan(0.001f), "Preview should change intensity.\n" + diagnostics);
+            Assert.That(Mathf.Abs(after.ConeWidth - before.ConeWidth), Is.GreaterThan(0.001f), "Preview should change coneWidth.\n" + diagnostics);
+            Assert.That(Mathf.Abs(after.ConeLength - before.ConeLength), Is.GreaterThan(0.001f), "Preview should change coneLength.\n" + diagnostics);
+            Assert.That(after.Gobo, Is.Not.EqualTo(before.Gobo), "Preview should change gobo.\n" + diagnostics);
+            Assert.That(after.EnableDmx, Is.Not.EqualTo(before.EnableDmx), "Preview should disable DMX channels.\n" + diagnostics);
+            Assert.That(after.EnableStrobe, Is.Not.EqualTo(before.EnableStrobe), "Preview should disable strobe.\n" + diagnostics);
+        }
+
+        private static TrackAsset[] GetAllTracks(TimelineAsset timeline)
+        {
+            return timeline.GetRootTracks()
+                .Concat(timeline.GetOutputTracks())
+                .Concat(timeline.outputs.Select(output => output.sourceObject).OfType<TrackAsset>())
+                .Distinct()
+                .ToArray();
+        }
+
+        private static void AssertRetainedTrackClips(
+            TrackAsset sourceTrack,
+            TrackAsset uploadTrack,
+            double expectedStart,
+            double expectedDuration,
+            string trackName,
+            string diagnostics)
+        {
+            Assert.NotNull(sourceTrack, $"Source {trackName} is missing.\n{diagnostics}");
+            Assert.NotNull(uploadTrack, $"Upload Timeline is missing {trackName}.\n{diagnostics}");
+
+            var sourceClips = sourceTrack.GetClips().ToArray();
+            var uploadClips = uploadTrack.GetClips().ToArray();
+            Assert.That(sourceClips, Is.Not.Empty, $"Source {trackName} has no clips.\n{diagnostics}");
+            Assert.That(uploadClips, Has.Length.EqualTo(sourceClips.Length), $"Upload {trackName} clip count changed.\n{diagnostics}");
+            Assert.That(uploadClips[0].start, Is.EqualTo(expectedStart).Within(0.001), $"Upload {trackName} clip start changed.\n{diagnostics}");
+            Assert.That(uploadClips[0].duration, Is.EqualTo(expectedDuration).Within(0.001), $"Upload {trackName} clip duration changed.\n{diagnostics}");
+            Assert.NotNull(uploadClips[0].asset, $"Upload {trackName} clip asset was lost.\n{diagnostics}");
+        }
+
+        private static void AssertAnimationClipCurvesRetained(AnimationTrack uploadAnimation, string diagnostics)
+        {
+            var timelineClip = uploadAnimation.GetClips().FirstOrDefault();
+            var playableAsset = timelineClip != null ? timelineClip.asset as AnimationPlayableAsset : null;
+            Assert.NotNull(playableAsset, "Upload AnimationTrack clip is not an AnimationPlayableAsset.\n" + diagnostics);
+            Assert.NotNull(playableAsset.clip, "Upload AnimationTrack lost its AnimationClip.\n" + diagnostics);
+            Assert.That(AnimationUtility.GetCurveBindings(playableAsset.clip), Is.Not.Empty, "Upload AnimationTrack AnimationClip lost its curves.\n" + diagnostics);
         }
     }
 }

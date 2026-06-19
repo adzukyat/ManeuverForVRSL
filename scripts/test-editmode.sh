@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="${ROOT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 PROJECT_PATH="${PROJECT_PATH:-${ROOT_DIR}/TestProject~}"
-RESULTS_DIR="${ROOT_DIR}/TestResults"
+RESULTS_DIR="${RESULTS_DIR:-${PROJECT_PATH}/TestResults~}"
 RESULTS_XML="${RESULTS_DIR}/editmode-results.xml"
 EDITOR_LOG="${RESULTS_DIR}/editor.log"
 
