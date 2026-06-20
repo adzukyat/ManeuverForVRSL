@@ -167,9 +167,39 @@ namespace StageLightManeuver
         
         public void InitStageLightProfile()
         {
-            if (StageLightQueueData == null)
+            if (behaviour == null ||
+                behaviour.stageLightQueueData == null ||
+                behaviour.stageLightQueueData.stageLightProperties == null)
+            {
+                if (behaviour == null)
+                {
+                    behaviour = new StageLightTimelineBehaviour();
+                }
+
+                behaviour.Init();
+            }
+
+            EnsureRequiredProperties();
+        }
+
+        public void EnsureRequiredProperties()
+        {
+            if (behaviour == null)
+            {
+                behaviour = new StageLightTimelineBehaviour();
+            }
+
+            if (behaviour.stageLightQueueData == null ||
+                behaviour.stageLightQueueData.stageLightProperties == null)
             {
                 behaviour.Init();
+            }
+
+            behaviour.CheckRequiredProperties();
+
+            foreach (var additionalProperty in behaviour.stageLightQueueData.stageLightProperties.OfType<SlmAdditionalProperty>())
+            {
+                additionalProperty.EnsureClockOverride();
             }
         }
 

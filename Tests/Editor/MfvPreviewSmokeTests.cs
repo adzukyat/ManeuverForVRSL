@@ -4,7 +4,9 @@ using ManeuverForVRSL.Editor;
 using NUnit.Framework;
 using StageLightManeuver;
 using UnityEditor;
+using UnityEditor.Timeline;
 using UnityEngine;
+using UnityEngine.Playables;
 using UnityEngine.TestTools;
 using UnityEngine.Timeline;
 
@@ -39,6 +41,61 @@ namespace ManeuverForVRSL.Tests
             Assert.That(sample.After.Gobo, Is.EqualTo(MfvPreviewSmokeFixtureBuilder.ExpectedGobo), diagnostics);
             Assert.IsFalse(sample.After.EnableDmx, diagnostics);
             Assert.IsFalse(sample.After.EnableStrobe, diagnostics);
+        }
+
+        [Test]
+        public void Level3_FreshTimelineClipEditorAndEvaluation_DoesNotLogErrors()
+        {
+            var timeline = ScriptableObject.CreateInstance<TimelineAsset>();
+            var directorObject = new GameObject("Fresh Timeline Director");
+            var fixtureObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            try
+            {
+                timeline.name = "Fresh Timeline Clip Smoke";
+                var track = timeline.CreateTrack<StageLightTimelineTrack>(null, "Fresh SLM");
+                var clip = track.CreateClip<StageLightTimelineClip>();
+                clip.start = 0;
+                clip.duration = 1;
+                var slmClip = (StageLightTimelineClip)clip.asset;
+                slmClip.behaviour.stageLightQueueData.stageLightProperties.Add(new LightProperty());
+                slmClip.behaviour.stageLightQueueData.stageLightProperties.Add(new LightIntensityProperty());
+                slmClip.behaviour.stageLightQueueData.stageLightProperties.Add(new LightColorProperty());
+
+                var clipEditor = new StageLightTimelineClipEditor();
+                Assert.DoesNotThrow(() => clipEditor.OnClipChanged(clip));
+                AssertClockOverridesInitialized(slmClip);
+
+                slmClip.track = null;
+                track.drawCustomClip = false;
+                Assert.DoesNotThrow(() => clipEditor.DrawBackground(
+                    clip,
+                    new ClipBackgroundRegion(new Rect(0f, 0f, 160f, 18f), 0, clip.duration)));
+
+                var director = directorObject.AddComponent<PlayableDirector>();
+                director.playableAsset = timeline;
+                director.playOnAwake = false;
+                director.timeUpdateMode = DirectorUpdateMode.Manual;
+                var stageLightFixture = fixtureObject.AddComponent<StageLightFixture>();
+                var channel = fixtureObject.AddComponent<MfvVRSLFixtureChannel>();
+                var vrslFixture = fixtureObject.AddComponent<VRSL.VRStageLighting_DMX_Static>();
+                vrslFixture.objRenderers = new[] { fixtureObject.GetComponent<MeshRenderer>() };
+                channel.vrslFixture = vrslFixture;
+                stageLightFixture.Init();
+                director.SetGenericBinding(track, stageLightFixture);
+
+                Assert.DoesNotThrow(() =>
+                {
+                    director.time = 0.5;
+                    director.Evaluate();
+                });
+                LogAssert.NoUnexpectedReceived();
+            }
+            finally
+            {
+                Object.DestroyImmediate(timeline);
+                Object.DestroyImmediate(directorObject);
+                Object.DestroyImmediate(fixtureObject);
+            }
         }
 
         [Test]
@@ -163,6 +220,16 @@ namespace ManeuverForVRSL.Tests
             Assert.That(actual.Gobo, Is.EqualTo(expected.Gobo), reason + "\n" + diagnostics);
             Assert.That(actual.EnableDmx, Is.EqualTo(expected.EnableDmx), reason + "\n" + diagnostics);
             Assert.That(actual.EnableStrobe, Is.EqualTo(expected.EnableStrobe), reason + "\n" + diagnostics);
+        }
+
+        private static void AssertClockOverridesInitialized(StageLightTimelineClip clip)
+        {
+            foreach (var property in clip.StageLightQueueData.stageLightProperties.OfType<SlmAdditionalProperty>())
+            {
+                Assert.NotNull(property.clockOverride, $"{property.propertyName} clockOverride should be initialized.");
+                Assert.NotNull(property.clockOverride.value, $"{property.propertyName} clockOverride.value should be initialized.");
+                Assert.NotNull(property.clockOverride.value.arrayStaggerValue, $"{property.propertyName} clockOverride array stagger should be initialized.");
+            }
         }
 
         private static void AssertFixtureChanged(

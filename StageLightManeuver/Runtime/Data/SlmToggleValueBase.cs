@@ -48,7 +48,15 @@ namespace StageLightManeuver
         public T value;
         public SlmToggleValue(SlmToggleValue<T> slmToggleValue)
         {
+            if (slmToggleValue == null)
+            {
+                propertyOverride = false;
+                value = default;
+                return;
+            }
+
             propertyOverride = slmToggleValue.propertyOverride;
+            sortOrder = slmToggleValue.sortOrder;
             this.value = slmToggleValue.value;
         }
 
@@ -121,11 +129,23 @@ namespace StageLightManeuver
         
         public ClockOverride(ClockOverride clockOverride)
         {
+            if (clockOverride == null)
+            {
+                loopType = LoopType.Loop;
+                bpmScale = 1f;
+                offsetTime = 0f;
+                childStagger = 0f;
+                arrayStaggerValue = new ArrayStaggerValue();
+                return;
+            }
+
             loopType = clockOverride.loopType;
             bpmScale = clockOverride.bpmScale;
             offsetTime = clockOverride.offsetTime;
             childStagger = clockOverride.childStagger;
-            arrayStaggerValue = new ArrayStaggerValue(clockOverride.arrayStaggerValue);
+            arrayStaggerValue = clockOverride.arrayStaggerValue != null
+                ? new ArrayStaggerValue(clockOverride.arrayStaggerValue)
+                : new ArrayStaggerValue();
         }
         
        
@@ -143,20 +163,50 @@ namespace StageLightManeuver
     public class SlmAdditionalProperty:SlmProperty,IArrayProperty
     {
         
-        public SlmToggleValue<ClockOverride> clockOverride = new  SlmToggleValue<ClockOverride>()
-        {
-            value = new ClockOverride(),
-            sortOrder = -999,
-        };
+        public SlmToggleValue<ClockOverride> clockOverride = CreateClockOverrideValue();
         
         public SlmAdditionalProperty()
         {
             propertyType = StageLightPropertyType.Array;
             propertyOverride = true;
+            EnsureClockOverride();
+        }
+
+        protected static SlmToggleValue<ClockOverride> CreateClockOverrideValue()
+        {
+            return new SlmToggleValue<ClockOverride>(new ClockOverride())
+            {
+                sortOrder = -999,
+            };
+        }
+
+        public void EnsureClockOverride()
+        {
+            if (clockOverride == null)
+            {
+                clockOverride = CreateClockOverrideValue();
+                return;
+            }
+
+            if (clockOverride.value == null)
+            {
+                clockOverride.value = new ClockOverride();
+            }
+
+            if (clockOverride.value.arrayStaggerValue == null)
+            {
+                clockOverride.value.arrayStaggerValue = new ArrayStaggerValue();
+            }
+
+            if (clockOverride.sortOrder == 0)
+            {
+                clockOverride.sortOrder = -999;
+            }
         }
 
         public virtual void ResyncArraySize(List<StageLightFixture> stageLights)
         {
+            EnsureClockOverride();
             if(clockOverride.value != null && clockOverride.value.arrayStaggerValue != null)
                 clockOverride.value.arrayStaggerValue.ResyncArraySize(stageLights);
         }

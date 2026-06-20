@@ -162,9 +162,9 @@ namespace ManeuverForVRSL
         private static float GetNormalizedTimeSafe(float currentTime, StageLightQueueData queueData, System.Type propertyType, int index)
         {
             var additionalProperty = queueData.TryGetActiveProperty(propertyType);
-            if (additionalProperty != null && additionalProperty.clockOverride.value == null)
+            if (additionalProperty != null)
             {
-                additionalProperty.clockOverride.value = new ClockOverride();
+                additionalProperty.EnsureClockOverride();
             }
 
             return SlmUtility.GetNormalizedTime(currentTime, queueData, propertyType, index);

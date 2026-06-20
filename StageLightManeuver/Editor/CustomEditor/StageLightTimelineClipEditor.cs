@@ -51,6 +51,8 @@ namespace StageLightManeuver
             var stageLightTimelineClip = (StageLightTimelineClip)clip.asset;
             if (stageLightTimelineClip == null)
                 return;
+            stageLightTimelineClip.EnsureRequiredProperties();
+            ResolveTrack(stageLightTimelineClip, clip);
             GetGradientTexture(clip, true);
             if (stageLightTimelineClip.referenceStageLightProfile != null && stageLightTimelineClip.syncClipName)
                 clip.displayName = stageLightTimelineClip.referenceStageLightProfile.name;
@@ -84,6 +86,9 @@ namespace StageLightManeuver
         {
             base.DrawBackground(clip, region);
             var stageLightTimelineClip = (StageLightTimelineClip) clip.asset;
+            if (stageLightTimelineClip == null) return;
+            stageLightTimelineClip.EnsureRequiredProperties();
+            var track = ResolveTrack(stageLightTimelineClip, clip);
 
 
 
@@ -91,7 +96,7 @@ namespace StageLightManeuver
             {
                 stageLightTimelineClip.clipDisplayName = clip.displayName;
             }
-            if (stageLightTimelineClip.track.drawCustomClip)
+            if (track != null && track.drawCustomClip)
             {
 
                 if (syncIconTexture == null) syncIconTexture = Resources.Load<Texture2D>("Icons/icon_sync");
@@ -103,8 +108,7 @@ namespace StageLightManeuver
                 }
 
                 var tex = GetGradientTexture(clip, update);
-                if (stageLightTimelineClip.track == null) return;
-                var colorHeight = region.position.height * stageLightTimelineClip.track.colorLineHeight;
+                var colorHeight = region.position.height * track.colorLineHeight;
                 // var beatHeight = 2f;
 
                 UpdateBeatPoint(clip);
@@ -120,7 +124,7 @@ namespace StageLightManeuver
                     {
 
                         EditorGUI.DrawRect(new Rect(start + width * p, 0, 1, region.position.height),
-                            stageLightTimelineClip.track.beatLineColor);
+                            track.beatLineColor);
                     }
 
 
@@ -164,11 +168,12 @@ namespace StageLightManeuver
         {
             var customClip = clip.asset as StageLightTimelineClip;
             var beatPointList = new List<float>();
-
-            if (customClip.StageLightQueueData == null)
+            if (customClip == null)
             {
-                customClip.InitStageLightProfile();
+                return;
             }
+
+            customClip.EnsureRequiredProperties();
             
             var timeProperty = customClip.StageLightQueueData.TryGetActiveProperty<ClockProperty>();
             
@@ -214,6 +219,7 @@ namespace StageLightManeuver
             
             if (!customClip) return tex;
 
+            customClip.EnsureRequiredProperties();
             if(customClip.StageLightQueueData == null) return tex;
             var lightProperty = customClip.StageLightQueueData.TryGetActiveProperty<LightProperty>();
             var materialColorProperty = customClip.StageLightQueueData.TryGetActiveProperty<MaterialColorProperty>();
@@ -312,6 +318,18 @@ namespace StageLightManeuver
 
            
             return tex;
+        }
+
+        private static StageLightTimelineTrack ResolveTrack(StageLightTimelineClip stageLightTimelineClip, TimelineClip clip)
+        {
+            var track = stageLightTimelineClip.track;
+            if (track == null && clip != null)
+            {
+                track = clip.GetParentTrack() as StageLightTimelineTrack;
+                stageLightTimelineClip.track = track;
+            }
+
+            return track;
         }
 
         

@@ -5,10 +5,12 @@
     "ManeuverForVRSL.Runtime",
     "ManeuverForVRSL.Editor",
     "Iridescenent.SLM.Runtime",
+    "Iridescenent.SLM.Editor",
     "VRSL.Core",
     "VRC.SDKBase",
     "UdonSharp.Runtime",
     "Unity.Timeline",
+    "Unity.Timeline.Editor",
     "UnityEngine.TestRunner",
     "UnityEditor.TestRunner"
   ],
