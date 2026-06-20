@@ -18,7 +18,17 @@ namespace StageLightManeuver
         bool isInitialized = false;
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (property == null)
+            {
+                return;
+            }
+
             var stageLightProperties = GetValueFromCache(property) as List<SlmProperty>;
+            if (stageLightProperties == null)
+            {
+                return;
+            }
+
             stageLightProperties.RemoveAll(x => x == null);
             if (isInitialized == false)
             {
@@ -34,7 +44,12 @@ namespace StageLightManeuver
             EditorGUI.indentLevel++;
             foreach (var propertyType in ClipProperty)
             {
-                var serializedSlmProperty = property.GetArrayElementAtIndex(stageLightProperties.FindIndex(x => x.GetType() == propertyType));
+                var serializedSlmProperty = GetArrayElementForPropertyType(property, stageLightProperties, propertyType);
+                if (serializedSlmProperty == null)
+                {
+                    continue;
+                }
+
                 EditorGUI.BeginChangeCheck();
                 EditorGUILayout.PropertyField(serializedSlmProperty, true);
                 if (EditorGUI.EndChangeCheck())
@@ -55,7 +70,12 @@ namespace StageLightManeuver
                 if (slmProperty == null || ClipProperty.Contains(slmProperty.GetType())) continue;
 
                 // EditorGUI.BeginDisabledGroup(slmProperty.isEditable == false);
-                var serializedSlmProperty = property.GetArrayElementAtIndex(i);
+                var serializedSlmProperty = GetArrayElementAtIndexSafe(property, i);
+                if (serializedSlmProperty == null)
+                {
+                    continue;
+                }
+
                 EditorGUI.BeginChangeCheck();
                 EditorGUILayout.PropertyField(serializedSlmProperty, true);
                 if (EditorGUI.EndChangeCheck())
@@ -89,18 +109,49 @@ namespace StageLightManeuver
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
             float height = 0f;
+            if (property == null)
+            {
+                return height;
+            }
+
             var stageLightProperties = GetValueFromCache(property) as List<SlmProperty>;
+            if (stageLightProperties == null)
+            {
+                return height;
+            }
+
             stageLightProperties.RemoveAll(x => x == null);
 
             for (int i = 0; i < stageLightProperties.Count; i++)
             {
                 var slmProperty = stageLightProperties[i];
                 if (slmProperty == null) continue;
-                height += EditorGUI.GetPropertyHeight(property.GetArrayElementAtIndex(i));
+                var serializedSlmProperty = GetArrayElementAtIndexSafe(property, i);
+                if (serializedSlmProperty == null) continue;
+                height += EditorGUI.GetPropertyHeight(serializedSlmProperty);
                 height += EditorGUIUtility.singleLineHeight;
             }
             height += EditorGUIUtility.singleLineHeight;
             return height;
+        }
+
+        private static SerializedProperty GetArrayElementForPropertyType(
+            SerializedProperty arrayProperty,
+            List<SlmProperty> stageLightProperties,
+            Type propertyType)
+        {
+            var index = stageLightProperties.FindIndex(x => x != null && x.GetType() == propertyType);
+            return GetArrayElementAtIndexSafe(arrayProperty, index);
+        }
+
+        private static SerializedProperty GetArrayElementAtIndexSafe(SerializedProperty arrayProperty, int index)
+        {
+            if (arrayProperty == null || !arrayProperty.isArray || index < 0 || index >= arrayProperty.arraySize)
+            {
+                return null;
+            }
+
+            return arrayProperty.GetArrayElementAtIndex(index);
         }
 
         private static void DrawRemoveButton(SerializedObject serializedObject, List<SlmProperty> properties, Action onRemove)

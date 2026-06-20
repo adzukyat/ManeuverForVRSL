@@ -152,6 +152,12 @@ namespace StageLightManeuver
 
 
             var value = GetValueFromCache(property);
+            if (value == null)
+            {
+                EditorGUILayout.PropertyField(property, displayLabel);
+                return;
+            }
+
             var valueType = value.GetType();
             var drawerType = GetDrawerTypeForPropertyAndType(property, valueType);
             if (drawerType != null)
@@ -176,6 +182,11 @@ namespace StageLightManeuver
             else
             {
                 var val = GetValueFromCache(property);
+                if (val == null)
+                {
+                    return EditorGUI.GetPropertyHeight(property, label);
+                }
+
                 var valueType = val.GetType();
                 var drawerType = GetDrawerTypeForPropertyAndType(property, valueType);
                 if (drawerType != null)

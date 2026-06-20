@@ -38,7 +38,9 @@ namespace StageLightManeuver.StageLightTimeline.Editor
         public override void OnInspectorGUI()
         {
             stageLightTimelineClip = serializedObject.targetObject as StageLightTimelineClip;
-            if(stageLightTimelineClip.stopEditorUiUpdate)  return;
+            if(stageLightTimelineClip == null || stageLightTimelineClip.stopEditorUiUpdate)  return;
+            stageLightTimelineClip.EnsureRequiredProperties();
+            serializedObject.Update();
             BeginInspector();
         }
 
@@ -61,24 +63,18 @@ namespace StageLightManeuver.StageLightTimeline.Editor
             EditorGUI.indentLevel++;
             EditorGUI.BeginDisabledGroup( stageLightTimelineClip.syncReferenceProfile);
                 // isMultiSelect = false;
-                var stageLightProperties = new List<SlmProperty>();
-                SerializedProperty serializedProperty;
+                stageLightTimelineClip.EnsureRequiredProperties();
+                var stageLightProperties = stageLightTimelineClip.StageLightQueueData.stageLightProperties;
+                stageLightProperties.RemoveAll(property => property == null);
+                serializedObject.Update();
 
-                stageLightProperties = stageLightTimelineClip.StageLightQueueData.stageLightProperties;
-                if(stageLightTimelineClip.StageLightQueueData == null) stageLightTimelineClip.behaviour.Init();
                 var behaviourProperty = serializedObject.FindProperty("behaviour");
-                var stageLightQueDataProperty = behaviourProperty.FindPropertyRelative("stageLightQueueData");
-                serializedProperty =stageLightQueDataProperty.FindPropertyRelative("stageLightProperties");
-                stageLightTimelineClip.behaviour.CheckRequiredProperties();
-                // remove null property
-                for (int i = 0; i < stageLightProperties.Count; i++)
+                var stageLightQueDataProperty = behaviourProperty?.FindPropertyRelative("stageLightQueueData");
+                var serializedProperty = stageLightQueDataProperty?.FindPropertyRelative("stageLightProperties");
+                if (serializedProperty == null)
                 {
-                    if (stageLightProperties[i] == null)
-                    {
-                        stageLightProperties.RemoveAt(i);
-                        serializedProperty.DeleteArrayElementAtIndex(i);
-                        i--;
-                    }
+                    EditorGUI.EndDisabledGroup();
+                    return;
                 }
 
                 EditorGUI.BeginChangeCheck();
@@ -109,19 +105,26 @@ namespace StageLightManeuver.StageLightTimeline.Editor
 
         private void DrawProfileIO()
         {
-             serializedObject.Update();
+            serializedObject.Update();
+            var referenceProfileProperty =
+                serializedObject.FindProperty(nameof(StageLightTimelineClip.referenceStageLightProfile));
             using (new EditorGUILayout.HorizontalScope())
             {
                 EditorGUILayout.LabelField("Profile", GUILayout.MaxWidth(60));
                 EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("referenceStageLightProfile"),
-                    new GUIContent(""));
+                if (referenceProfileProperty != null)
+                {
+                    EditorGUILayout.PropertyField(referenceProfileProperty, new GUIContent(""));
+                }
+
                 if (EditorGUI.EndChangeCheck())
                 {
-                    if (serializedObject.FindProperty("referenceStageLightProfile").objectReferenceValue == null)
+                    if (referenceProfileProperty != null &&
+                        referenceProfileProperty.objectReferenceValue == null)
                     {
                         stageLightTimelineClip.syncReferenceProfile = false;
                     }
+
                     serializedObject.ApplyModifiedProperties();
                 }
             }
@@ -180,7 +183,13 @@ namespace StageLightManeuver.StageLightTimeline.Editor
             EditorGUI.EndDisabledGroup();
             
             EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("syncReferenceProfile"));
+            var syncReferenceProfileProperty =
+                serializedObject.FindProperty(nameof(StageLightTimelineClip.syncReferenceProfile));
+            if (syncReferenceProfileProperty != null)
+            {
+                EditorGUILayout.PropertyField(syncReferenceProfileProperty);
+            }
+
             if (EditorGUI.EndChangeCheck())
             {
                 
@@ -191,7 +200,12 @@ namespace StageLightManeuver.StageLightTimeline.Editor
             
             
             EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("syncClipName"));
+            var syncClipNameProperty = serializedObject.FindProperty(nameof(StageLightTimelineClip.syncClipName));
+            if (syncClipNameProperty != null)
+            {
+                EditorGUILayout.PropertyField(syncClipNameProperty);
+            }
+
             if (EditorGUI.EndChangeCheck())
             {
                 serializedObject.ApplyModifiedProperties();
@@ -204,7 +218,12 @@ namespace StageLightManeuver.StageLightTimeline.Editor
             {
 
                 EditorGUI.BeginChangeCheck();
-                var path = EditorGUILayout.PropertyField(serializedObject.FindProperty("exportPath"));
+                var exportPathProperty = serializedObject.FindProperty(nameof(StageLightTimelineClip.exportPath));
+                if (exportPathProperty != null)
+                {
+                    EditorGUILayout.PropertyField(exportPathProperty);
+                }
+
                 if (EditorGUI.EndChangeCheck())
                 {
                     serializedObject.ApplyModifiedProperties();

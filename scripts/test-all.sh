@@ -2,3 +2,4 @@
 set -euo pipefail
 
 "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/scripts/test-editmode.sh"
+"$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/scripts/test-editor-ui.sh"
