@@ -1,7 +1,6 @@
 {
   "dependencies": {
     "me.adzuki.maneuver-for-vrsl": "file:../..",
-    "jp.iridescent.stagelightmaneuver": "https://github.com/murasaqi/Unity_StageLightManeuver.git?path=/jp.iridescenet.stagelightmaneuver#v1.0.2",
     "com.acchosen.vr-stage-lighting": "file:com.acchosen.vr-stage-lighting",
     "com.llealloo.audiolink": "file:com.llealloo.audiolink",
     "com.vrchat.base": "file:com.vrchat.base",
@@ -11,7 +10,6 @@
     "com.unity.textmeshpro": "3.0.6",
     "com.unity.ugui": "1.0.0",
     "com.unity.visualscripting": "1.8.0",
-    "com.unity.render-pipelines.universal": "14.0.8",
     "com.unity.modules.ai": "1.0.0",
     "com.unity.modules.androidjni": "1.0.0",
     "com.unity.modules.animation": "1.0.0",

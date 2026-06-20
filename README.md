@@ -1,6 +1,6 @@
 # Maneuver For VRSL
 
-Maneuver For VRSL lets you author stage-lighting cues with Stage Light Maneuver (SLM) and play them back through VR Stage Lighting (VRSL) in VRChat worlds.
+Maneuver For VRSL includes a VRChat-compatible Stage Light Maneuver (SLM) authoring layer and plays baked lighting back through VR Stage Lighting (VRSL) in VRChat worlds.
 
 The intended workflow is:
 
@@ -15,12 +15,13 @@ The intended workflow is:
 
 This repository is a UPM package at the repository root. Add it to an existing Unity project with the normal Git URL workflow; do not add a `?path=` suffix.
 
-Install the external authoring/runtime dependencies before adding this package, or use a VCC world project that already resolves them:
+Install the external runtime dependencies before adding this package, or use a VCC world project that already resolves them:
 
-- Stage Light Maneuver `jp.iridescent.stagelightmaneuver` `1.0.2`
 - VR Stage Lighting `com.acchosen.vr-stage-lighting` `2.8.4`
 - VRChat SDK Base `com.vrchat.base` `3.10.2`
 - VRChat SDK Worlds `com.vrchat.worlds` `3.10.2`
+
+Do not install the external `jp.iridescent.stagelightmaneuver` package alongside Maneuver For VRSL. This package already includes its SLM authoring layer under `StageLightManeuver/`.
 
 The committed `TestProject~` harness bootstraps the VRC/VRSL/AudioLink packages locally for tests, but a normal user project should resolve those dependencies through VCC or the registries/package sources used by that project.
 
@@ -179,7 +180,22 @@ scripts/bootstrap-test-project.sh
 scripts/test-editmode.sh
 ```
 
-The script defaults to `TestProject~` and Unity `2022.3.22f1` installed by Unity Hub. If Unity is installed elsewhere, set `UNITY_EXECUTABLE`:
+### Regenerate Stage Light Maneuver
+
+The integrated SLM authoring layer is generated from the upstream repository plus the patch in `patches/stage-light-maneuver-vrchat.patch`.
+This rewrites `StageLightManeuver/`:
+
+```sh
+scripts/vendor-stage-light-maneuver.sh
+```
+
+To try another upstream ref, run for example:
+
+```sh
+SLM_UPSTREAM_REF=v1.0.3 scripts/vendor-stage-light-maneuver.sh
+```
+
+The test script defaults to `TestProject~` and Unity `2022.3.22f1` installed by Unity Hub. If Unity is installed elsewhere, set `UNITY_EXECUTABLE`:
 
 ```sh
 UNITY_EXECUTABLE="/Applications/Unity/Hub/Editor/2022.3.22f1/Unity.app/Contents/MacOS/Unity" scripts/test-editmode.sh
