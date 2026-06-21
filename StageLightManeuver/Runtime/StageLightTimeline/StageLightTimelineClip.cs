@@ -64,14 +64,10 @@ namespace StageLightManeuver
             InitStageLightProfile();
             var playable = ScriptPlayable<StageLightTimelineBehaviour>.Create(graph, behaviour);
             behaviour = playable.GetBehaviour();
-            var queData = StageLightQueueData;
 
             var playabledirector = owner.GetComponent<PlayableDirector>();
 
-            if (queData.stageLightProperties.Count <=0)
-            {
-                AddAllProperty(playabledirector, queData);
-            }
+            EnsureFixtureProperties(playabledirector);
 
             if (syncReferenceProfile && referenceStageLightProfile != null)
             {
@@ -81,22 +77,37 @@ namespace StageLightManeuver
             return playable;
         }
 
-        private void AddAllProperty(PlayableDirector playabledirector, StageLightQueueData queData)
+        public bool EnsureFixtureProperties(PlayableDirector playabledirector, bool logMissingBinding = true)
         {
-            
-            if (StageLightQueueData.stageLightProperties.Find(x => x.GetType() == typeof(ClockProperty)) == null)
+            var queData = StageLightQueueData;
+            if (HasFixtureProperties(queData) || playabledirector == null || playabledirector.playableAsset == null)
             {
-                StageLightQueueData.stageLightProperties.Insert(0,new ClockProperty());    
+                return false;
             }
 
-            if (StageLightQueueData.stageLightProperties.Find(x => x.GetType() == typeof(StageLightOrderProperty)) ==
+            return AddAllProperty(playabledirector, queData, logMissingBinding);
+        }
+
+        private bool AddAllProperty(PlayableDirector playabledirector, StageLightQueueData queData, bool logMissingBinding)
+        {
+            var changed = false;
+            
+            if (StageLightQueueData.stageLightProperties.Find(x => x != null && x.GetType() == typeof(ClockProperty)) == null)
+            {
+                StageLightQueueData.stageLightProperties.Insert(0,new ClockProperty());
+                changed = true;
+            }
+
+            if (StageLightQueueData.stageLightProperties.Find(x => x != null && x.GetType() == typeof(StageLightOrderProperty)) ==
                 null)
             {
                 StageLightQueueData.stageLightProperties.Insert(1,new StageLightOrderProperty());
+                changed = true;
             }
             
             var isInSubTrack = false;
             var propertyTypes = new List<Type>();
+            var initializerBindings = new List<StageLightFixtureBase>();
             foreach (var tAssetOutput in playabledirector.playableAsset.outputs)
             {
                 if(tAssetOutput.sourceObject == null) continue;
@@ -130,11 +141,15 @@ namespace StageLightManeuver
                                     if (stageLightFixtureBase != null)
                                     {
                                         propertyTypes.AddRange(stageLightFixtureBase.GetAllPropertyType());
+                                        initializerBindings.Add(stageLightFixtureBase);
                                     }
                                 }
                                 else
                                 {
-                                    Debug.LogWarning("Binding is null\n" + track.name + " is not binding to StageLightFixtureBase");
+                                    if (logMissingBinding)
+                                    {
+                                        Debug.LogWarning("Binding is null\n" + track.name + " is not binding to StageLightFixtureBase");
+                                    }
                                 }
                             }
                         }
@@ -146,10 +161,11 @@ namespace StageLightManeuver
             foreach (var propertyType in propertyTypes)
             {
                 // if not contain channel type in queData, add it
-                if (queData.stageLightProperties.Find( x => x.GetType() == propertyType) == null)
+                if (queData.stageLightProperties.Find( x => x != null && x.GetType() == propertyType) == null)
                 {
                     var channel = Activator.CreateInstance(propertyType) as SlmProperty;
                     queData.stageLightProperties.Add(channel);
+                    changed = true;
 
                     // オーバライドトラックのクリップの場合、Clock と Order 以外の propertyOverride フラグを立てない
                     if (isInSubTrack)
@@ -161,6 +177,27 @@ namespace StageLightManeuver
                     }
                 }
             }
+
+            foreach (var initializerBinding in initializerBindings.Distinct())
+            {
+                initializerBinding.InitializeTimelineProperties(queData);
+                changed = true;
+            }
+
+            return changed;
+        }
+
+        private static bool HasFixtureProperties(StageLightQueueData queData)
+        {
+            if (queData == null || queData.stageLightProperties == null)
+            {
+                return false;
+            }
+
+            return queData.stageLightProperties.Any(property =>
+                property != null &&
+                property.GetType() != typeof(ClockProperty) &&
+                property.GetType() != typeof(StageLightOrderProperty));
         }
         
 

@@ -27,5 +27,9 @@ namespace StageLightManeuver
         {
             return new List<Type>();
         }
+
+        public virtual void InitializeTimelineProperties(StageLightQueueData stageLightQueueData)
+        {
+        }
     }
 }

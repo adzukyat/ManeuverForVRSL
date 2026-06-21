@@ -83,6 +83,7 @@ namespace StageLightManeuver
         
         public override List<Type> GetAllPropertyType()
         {
+            Init();
             var types = new List<Type>();
             foreach (var stageLight in stageLightFixtures)
             {
@@ -92,6 +93,18 @@ namespace StageLightManeuver
             // remove same type from list
             types = types.Distinct().ToList();
             return types;
+        }
+
+        public override void InitializeTimelineProperties(StageLightQueueData stageLightQueueData)
+        {
+            Init();
+            foreach (var stageLight in stageLightFixtures)
+            {
+                if (stageLight != null)
+                {
+                    stageLight.InitializeTimelineProperties(stageLightQueueData, stageLightFixtures);
+                }
+            }
         }
 
         public override void UpdateChannel()

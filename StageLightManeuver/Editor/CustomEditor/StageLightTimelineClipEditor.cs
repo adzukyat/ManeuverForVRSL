@@ -52,6 +52,7 @@ namespace StageLightManeuver
             if (stageLightTimelineClip == null)
                 return;
             stageLightTimelineClip.EnsureRequiredProperties();
+            EnsureFixtureProperties(stageLightTimelineClip);
             ResolveTrack(stageLightTimelineClip, clip);
             GetGradientTexture(clip, true);
             if (stageLightTimelineClip.referenceStageLightProfile != null && stageLightTimelineClip.syncClipName)
@@ -78,6 +79,7 @@ namespace StageLightManeuver
                 stageLightTimelineClip.exportPath = SlmUtility.BaseExportPath;
             }
 
+            EnsureFixtureProperties(stageLightTimelineClip);
        
         }
 
@@ -162,6 +164,14 @@ namespace StageLightManeuver
             }
 
             stageLightTimelineClip.forceTimelineClipUpdate = false;
+        }
+
+        private static void EnsureFixtureProperties(StageLightTimelineClip stageLightTimelineClip)
+        {
+            if (stageLightTimelineClip.EnsureFixtureProperties(TimelineEditor.masterDirector, false))
+            {
+                EditorUtility.SetDirty(stageLightTimelineClip);
+            }
         }
         
         public void UpdateBeatPoint(TimelineClip clip,float step = 0.01f)

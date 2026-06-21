@@ -84,6 +84,72 @@ namespace ManeuverForVRC.Tests
         }
 
         [Test]
+        public void InitializeTimelineProperties_UsesVrslFixtureDefaultsForFreshClip()
+        {
+            var fixtureObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            try
+            {
+                var stageFixture = fixtureObject.AddComponent<StageLightFixture>();
+                var channel = fixtureObject.AddComponent<MfvVRSLFixtureChannel>();
+                var vrslFixture = fixtureObject.AddComponent<VRStageLighting_DMX_Static>();
+                vrslFixture.objRenderers = new[] { fixtureObject.GetComponent<MeshRenderer>() };
+                vrslFixture.panOffsetBlueGreen = 12f;
+                vrslFixture.tiltOffsetBlue = 34f;
+                vrslFixture.globalIntensity = 0.65f;
+                vrslFixture.lightColorTint = new Color(0.2f, 0.4f, 0.8f, 1f);
+                vrslFixture.coneWidth = 2.2f;
+                vrslFixture.coneLength = 7f;
+                vrslFixture.selectGOBO = 6;
+                channel.vrslFixture = vrslFixture;
+                stageFixture.Init();
+
+                var queueData = CreateFreshQueueData();
+                stageFixture.InitializeTimelineProperties(queueData);
+
+                var intensity = queueData.TryGetActiveProperty<LightIntensityProperty>();
+                var color = queueData.TryGetActiveProperty<LightColorProperty>();
+                var light = queueData.TryGetActiveProperty<LightProperty>();
+                var pan = queueData.TryGetActiveProperty<PanProperty>();
+                var tilt = queueData.TryGetActiveProperty<TiltProperty>();
+                var gobo = queueData.TryGetActiveProperty<MfvVRSLGoboProperty>();
+
+                Assert.NotNull(intensity);
+                Assert.NotNull(color);
+                Assert.NotNull(light);
+                Assert.NotNull(pan);
+                Assert.NotNull(tilt);
+                Assert.NotNull(gobo);
+                Assert.IsNull(queueData.TryGetActiveProperty<LightFlickerProperty>());
+                Assert.IsNull(queueData.TryGetActiveProperty<ManualLightArrayProperty>());
+                Assert.IsNull(queueData.TryGetActiveProperty<ManualColorArrayProperty>());
+                Assert.IsNull(queueData.TryGetActiveProperty<ManualPanTiltProperty>());
+                Assert.That(intensity.lightToggleIntensity.value.constant, Is.EqualTo(6.5f).Within(0.0001f));
+                Assert.That(light.spotAngle.value.constant, Is.EqualTo(72f).Within(0.0001f));
+                Assert.That(light.range.value.constant, Is.EqualTo(68.42105f).Within(0.0001f));
+                Assert.That(color.lightToggleColor.value.Evaluate(0f), Is.EqualTo(vrslFixture.lightColorTint));
+                Assert.That(pan.rollTransform.value.constant, Is.EqualTo(12f).Within(0.0001f));
+                Assert.That(tilt.rollTransform.value.constant, Is.EqualTo(34f).Within(0.0001f));
+                Assert.That(gobo.goboIndex.value, Is.EqualTo(6));
+
+                var frame = MfvVRSLFrameEvaluator.Evaluate(new[] { queueData }, stageFixture, 0f);
+
+                Assert.That(frame.pan, Is.EqualTo(12f).Within(0.0001f));
+                Assert.That(frame.tilt, Is.EqualTo(34f).Within(0.0001f));
+                Assert.That(frame.intensity, Is.EqualTo(0.65f).Within(0.0001f));
+                Assert.That(frame.color.r, Is.EqualTo(0.2f).Within(0.0001f));
+                Assert.That(frame.color.g, Is.EqualTo(0.4f).Within(0.0001f));
+                Assert.That(frame.color.b, Is.EqualTo(0.8f).Within(0.0001f));
+                Assert.That(frame.coneWidth, Is.EqualTo(2.2f).Within(0.0001f));
+                Assert.That(frame.coneLength, Is.EqualTo(7f).Within(0.0001f));
+                Assert.That(frame.gobo, Is.EqualTo(6));
+            }
+            finally
+            {
+                Object.DestroyImmediate(fixtureObject);
+            }
+        }
+
+        [Test]
         public void TryApply_ReturnsFalseForMissingVrslFixture()
         {
             var applied = MfvVRSLFixtureApplier.TryApply(null, MfvVRSLFrame.Default());
@@ -105,6 +171,24 @@ namespace ManeuverForVRC.Tests
                     new ClockProperty(),
                     new StageLightOrderProperty(),
                     intensity
+                }
+            };
+        }
+
+        private static StageLightQueueData CreateFreshQueueData()
+        {
+            return new StageLightQueueData
+            {
+                stageLightProperties = new List<SlmProperty>
+                {
+                    new ClockProperty(),
+                    new StageLightOrderProperty(),
+                    new LightIntensityProperty(),
+                    new LightColorProperty(),
+                    new LightProperty(),
+                    new PanProperty(),
+                    new TiltProperty(),
+                    new MfvVRSLGoboProperty()
                 }
             };
         }

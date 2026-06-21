@@ -118,9 +118,36 @@ namespace StageLightManeuver
         
         public override List<Type> GetAllPropertyType()
         {
+            Init();
             var types = new List<Type>();
             types.AddRange(StageLightChannels.SelectMany(channel => channel.PropertyTypes));
-            return types;
+            return types.Distinct().ToList();
+        }
+
+        public override void InitializeTimelineProperties(StageLightQueueData stageLightQueueData)
+        {
+            Init();
+            InitializeTimelineProperties(stageLightQueueData, stageLightFixtures);
+        }
+
+        internal void InitializeTimelineProperties(StageLightQueueData stageLightQueueData, List<StageLightFixture> orderedFixtures)
+        {
+            if (stageLightQueueData == null)
+            {
+                return;
+            }
+
+            var fixtures = orderedFixtures != null && orderedFixtures.Count > 0
+                ? orderedFixtures
+                : stageLightFixtures;
+
+            foreach (var stageLightChannel in StageLightChannels)
+            {
+                if (stageLightChannel != null)
+                {
+                    stageLightChannel.InitializeTimelineProperties(stageLightQueueData, fixtures);
+                }
+            }
         }
 
 

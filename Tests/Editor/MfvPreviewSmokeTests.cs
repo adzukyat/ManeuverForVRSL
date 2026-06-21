@@ -107,6 +107,84 @@ namespace ManeuverForVRC.Tests
         }
 
         [Test]
+        public void Level3_FreshTimelineClipEvaluation_AddsScalarVrslPropertiesFromFixtureDefaults()
+        {
+            var timeline = ScriptableObject.CreateInstance<TimelineAsset>();
+            var directorObject = new GameObject("Fresh Timeline Defaults Director");
+            var fixtureObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            try
+            {
+                timeline.name = "Fresh Timeline Defaults";
+                var track = timeline.CreateTrack<StageLightTimelineTrack>(null, "Fresh SLM Defaults");
+                var clip = track.CreateClip<StageLightTimelineClip>();
+                clip.start = 0;
+                clip.duration = 1;
+                var slmClip = (StageLightTimelineClip)clip.asset;
+
+                var director = directorObject.AddComponent<PlayableDirector>();
+                director.playableAsset = timeline;
+                director.playOnAwake = false;
+                director.timeUpdateMode = DirectorUpdateMode.Manual;
+
+                var stageLightFixture = fixtureObject.AddComponent<StageLightFixture>();
+                var channel = fixtureObject.AddComponent<MfvVRSLFixtureChannel>();
+                var vrslFixture = fixtureObject.AddComponent<VRSL.VRStageLighting_DMX_Static>();
+                vrslFixture.objRenderers = new[] { fixtureObject.GetComponent<MeshRenderer>() };
+                vrslFixture.enableDMXChannels = true;
+                vrslFixture.enableStrobe = true;
+                vrslFixture.panOffsetBlueGreen = 12f;
+                vrslFixture.tiltOffsetBlue = 34f;
+                vrslFixture.globalIntensity = 0.65f;
+                vrslFixture.lightColorTint = new Color(0.2f, 0.4f, 0.8f, 1f);
+                vrslFixture.coneWidth = 2.2f;
+                vrslFixture.coneLength = 7f;
+                vrslFixture.selectGOBO = 6;
+                channel.vrslFixture = vrslFixture;
+                stageLightFixture.Init();
+                director.SetGenericBinding(track, stageLightFixture);
+
+                director.time = 0.5;
+                director.Evaluate();
+
+                Assert.NotNull(slmClip.StageLightQueueData.TryGetActiveProperty<LightIntensityProperty>());
+                Assert.NotNull(slmClip.StageLightQueueData.TryGetActiveProperty<LightColorProperty>());
+                Assert.NotNull(slmClip.StageLightQueueData.TryGetActiveProperty<LightProperty>());
+                Assert.NotNull(slmClip.StageLightQueueData.TryGetActiveProperty<PanProperty>());
+                Assert.NotNull(slmClip.StageLightQueueData.TryGetActiveProperty<TiltProperty>());
+                Assert.NotNull(slmClip.StageLightQueueData.TryGetActiveProperty<MfvVRSLGoboProperty>());
+                Assert.IsNull(slmClip.StageLightQueueData.TryGetActiveProperty<LightFlickerProperty>());
+                Assert.IsNull(slmClip.StageLightQueueData.TryGetActiveProperty<ManualLightArrayProperty>());
+                Assert.IsNull(slmClip.StageLightQueueData.TryGetActiveProperty<ManualColorArrayProperty>());
+                Assert.IsNull(slmClip.StageLightQueueData.TryGetActiveProperty<ManualPanTiltProperty>());
+                Assert.That(channel.lastFrame.pan, Is.EqualTo(12f).Within(0.0001f));
+                Assert.That(channel.lastFrame.tilt, Is.EqualTo(34f).Within(0.0001f));
+                Assert.That(channel.lastFrame.intensity, Is.EqualTo(0.65f).Within(0.0001f));
+                Assert.That(channel.lastFrame.color.r, Is.EqualTo(0.2f).Within(0.0001f));
+                Assert.That(channel.lastFrame.color.g, Is.EqualTo(0.4f).Within(0.0001f));
+                Assert.That(channel.lastFrame.color.b, Is.EqualTo(0.8f).Within(0.0001f));
+                Assert.That(channel.lastFrame.coneWidth, Is.EqualTo(2.2f).Within(0.0001f));
+                Assert.That(channel.lastFrame.coneLength, Is.EqualTo(7f).Within(0.0001f));
+                Assert.That(channel.lastFrame.gobo, Is.EqualTo(6));
+                Assert.That(vrslFixture.globalIntensity, Is.EqualTo(0.65f).Within(0.0001f));
+                Assert.That(vrslFixture.lightColorTint.r, Is.EqualTo(0.2f).Within(0.0001f));
+                Assert.That(vrslFixture.lightColorTint.g, Is.EqualTo(0.4f).Within(0.0001f));
+                Assert.That(vrslFixture.lightColorTint.b, Is.EqualTo(0.8f).Within(0.0001f));
+                Assert.That(vrslFixture.coneWidth, Is.EqualTo(2.2f).Within(0.0001f));
+                Assert.That(vrslFixture.coneLength, Is.EqualTo(7f).Within(0.0001f));
+                Assert.That(vrslFixture.selectGOBO, Is.EqualTo(6));
+                Assert.IsFalse(vrslFixture.enableDMXChannels);
+                Assert.IsFalse(vrslFixture.enableStrobe);
+                LogAssert.NoUnexpectedReceived();
+            }
+            finally
+            {
+                Object.DestroyImmediate(timeline);
+                Object.DestroyImmediate(directorObject);
+                Object.DestroyImmediate(fixtureObject);
+            }
+        }
+
+        [Test]
         public void Level4_BakeConsistency_MatchesPreviewAndKeepsUploadTimeline()
         {
             var context = MfvPreviewSmokeFixtureBuilder.OpenFreshScene();

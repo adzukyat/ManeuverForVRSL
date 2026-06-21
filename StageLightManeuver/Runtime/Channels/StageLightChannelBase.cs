@@ -103,5 +103,9 @@ namespace StageLightManeuver
                 SyncStageLight.Add(stageLightChannelBase);
             }
         }
+
+        public virtual void InitializeTimelineProperties(StageLightQueueData stageLightQueueData, List<StageLightFixture> stageLightFixtures)
+        {
+        }
     }
 }
