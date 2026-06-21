@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using ManeuverForVRSL.Editor;
+using ManeuverForVRC.Editor;
 using StageLightManeuver;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -13,7 +13,7 @@ using UnityEngine.Timeline;
 using VRSL;
 using Object = UnityEngine.Object;
 
-namespace ManeuverForVRSL.Tests
+namespace ManeuverForVRC.Tests
 {
     internal static class MfvPreviewSmokeFixtureBuilder
     {
@@ -34,7 +34,7 @@ namespace ManeuverForVRSL.Tests
         public const double ExpectedAnimationDuration = 1.0;
         public static readonly Color ExpectedColor = new Color(0.25f, 0.5f, 1f, 1f);
 
-        [MenuItem("ManeuverForVRSL/Tests/Regenerate Preview Smoke Fixture")]
+        [MenuItem("ManeuverForVRC/Tests/Regenerate Preview Smoke Fixture")]
         public static void RegenerateAssets()
         {
             EnsureFolder(FolderPath);

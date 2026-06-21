@@ -2,7 +2,7 @@ using System;
 using StageLightManeuver;
 using UnityEngine;
 
-namespace ManeuverForVRSL
+namespace ManeuverForVRC
 {
     [Serializable]
     public class MfvVRSLGoboProperty : SlmAdditionalProperty

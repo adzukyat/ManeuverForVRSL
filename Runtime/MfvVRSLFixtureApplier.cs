@@ -1,7 +1,7 @@
 using UnityEngine;
 using VRSL;
 
-namespace ManeuverForVRSL
+namespace ManeuverForVRC
 {
     public static class MfvVRSLFixtureApplier
     {

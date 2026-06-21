@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
-using ManeuverForVRSL;
+using ManeuverForVRC;
 using StageLightManeuver;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
 
-namespace ManeuverForVRSL.Editor
+namespace ManeuverForVRC.Editor
 {
     public static class MfvBakeValidator
     {

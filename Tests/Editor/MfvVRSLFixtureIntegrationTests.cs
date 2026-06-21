@@ -5,7 +5,7 @@ using UnityEngine;
 using VRSL;
 using Object = UnityEngine.Object;
 
-namespace ManeuverForVRSL.Tests
+namespace ManeuverForVRC.Tests
 {
     public class MfvVRSLFixtureIntegrationTests
     {

@@ -1,9 +1,9 @@
-using ManeuverForVRSL;
+using ManeuverForVRC;
 using NUnit.Framework;
 using StageLightManeuver;
 using UnityEngine;
 
-namespace ManeuverForVRSL.Tests
+namespace ManeuverForVRC.Tests
 {
     public class MfvVRSLFrameEvaluatorTests
     {

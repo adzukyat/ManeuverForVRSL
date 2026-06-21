@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ManeuverForVRSL
+namespace ManeuverForVRC
 {
     public struct MfvVRSLFrame
     {

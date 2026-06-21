@@ -1,8 +1,8 @@
 {
-  "name": "ManeuverForVRSL.Editor",
-  "rootNamespace": "ManeuverForVRSL.Editor",
+  "name": "ManeuverForVRC.Editor",
+  "rootNamespace": "ManeuverForVRC.Editor",
   "references": [
-    "ManeuverForVRSL.Runtime",
+    "ManeuverForVRC.Runtime",
     "Iridescenent.SLM.Runtime",
     "VRSL.Core",
     "VRC.SDKBase",

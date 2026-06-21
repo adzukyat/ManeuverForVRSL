@@ -1,6 +1,6 @@
 {
-  "name": "ManeuverForVRSL.Runtime",
-  "rootNamespace": "ManeuverForVRSL",
+  "name": "ManeuverForVRC.Runtime",
+  "rootNamespace": "ManeuverForVRC",
   "references": [
     "Iridescenent.SLM.Runtime",
     "VRSL.Core",

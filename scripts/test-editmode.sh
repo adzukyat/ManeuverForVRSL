@@ -58,7 +58,7 @@ set +e
   -projectPath "${PROJECT_PATH}" \
   -runTests \
   -testPlatform EditMode \
-  -assemblyNames ManeuverForVRSL.EditorTests \
+  -assemblyNames ManeuverForVRC.EditorTests \
   -testResults "${RESULTS_XML}" \
   -logFile "${EDITOR_LOG}"
 # Do not add -quit here: with Unity 2022.3 Test Framework it can preempt

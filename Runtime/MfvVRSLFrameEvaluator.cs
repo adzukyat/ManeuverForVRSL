@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using StageLightManeuver;
 using UnityEngine;
 
-namespace ManeuverForVRSL
+namespace ManeuverForVRC
 {
     public static class MfvVRSLFrameEvaluator
     {

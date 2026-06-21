@@ -712,7 +712,7 @@ MonoBehaviour:
           sortOrder: 0
           value: 0
     - rid: 602118294639214599
-      type: {class: MfvVRSLGoboProperty, ns: ManeuverForVRSL, asm: ManeuverForVRSL.Runtime}
+      type: {class: MfvVRSLGoboProperty, ns: ManeuverForVRC, asm: ManeuverForVRC.Runtime}
       data:
         propertyOverride: 1
         sortOrder: 0

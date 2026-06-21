@@ -1,8 +1,8 @@
-using ManeuverForVRSL;
+using ManeuverForVRC;
 using UnityEngine.Timeline;
 using VRSL;
 
-namespace ManeuverForVRSL.Editor
+namespace ManeuverForVRC.Editor
 {
     public sealed class MfvBakeResult
     {

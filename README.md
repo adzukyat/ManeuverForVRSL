@@ -1,6 +1,6 @@
-# Maneuver For VRSL
+# Maneuver For VRC
 
-Maneuver For VRSL includes a VRChat-compatible Stage Light Maneuver (SLM) authoring layer and plays baked lighting back through VR Stage Lighting (VRSL) in VRChat worlds.
+Maneuver For VRC includes a VRChat-compatible Stage Light Maneuver (SLM) authoring layer and plays baked lighting back through VR Stage Lighting (VRSL) in VRChat worlds.
 
 The intended workflow is:
 
@@ -21,7 +21,7 @@ Install the external runtime dependencies before adding this package, or use a V
 - VRChat SDK Base `com.vrchat.base` `3.10.2`
 - VRChat SDK Worlds `com.vrchat.worlds` `3.10.2`
 
-Do not install the external `jp.iridescent.stagelightmaneuver` package alongside Maneuver For VRSL. This package already includes its SLM authoring layer under `StageLightManeuver/`.
+Do not install the external `jp.iridescent.stagelightmaneuver` package alongside Maneuver For VRC. This package already includes its SLM authoring layer under `StageLightManeuver/`.
 
 The committed `TestProject~` harness bootstraps the VRC/VRSL/AudioLink packages locally for tests, but a normal user project should resolve those dependencies through VCC or the registries/package sources used by that project.
 
@@ -33,7 +33,7 @@ Add VRSL DMX Static fixtures to the scene. The initial implementation targets `V
 - `VRSL-DMX-Mover-WashLight-H-13CH`
 - other DMX Static fixtures using `VRStageLighting_DMX_Static`
 
-AudioLink fixtures are treated as VRSL-owned behavior and are not driven by Maneuver For VRSL in the initial version.
+AudioLink fixtures are treated as VRSL-owned behavior and are not driven by Maneuver For VRC in the initial version.
 
 ### 2. Add the SLM Adapter Components
 
@@ -44,7 +44,7 @@ On each VRSL-controlled fixture object, or on a nearby control object, add:
 
 `MfvVRSLFixtureChannel` appears in Unity's Add Component menu as:
 
-`Maneuver For VRSL > MFV VRSL Fixture Channel`
+`Maneuver For VRC > MFV VRSL Fixture Channel`
 
 Assign the target `VRStageLighting_DMX_Static` component to `MfvVRSLFixtureChannel.vrslFixture`.
 
@@ -117,7 +117,7 @@ The channel calls `_UpdateInstancedProperties()` once per fixture update.
 
 Before uploading the world, select the GameObject with the target `PlayableDirector` and run:
 
-`ManeuverForVRSL > Bake Selected Director`
+`ManeuverForVRC > Bake Selected Director`
 
 The baker will:
 
@@ -215,7 +215,7 @@ For manual inspection:
 3. Open `Assets/MfvTestFixtures/PreviewSmoke.unity`.
 4. Scrub or play `Assets/MfvTestFixtures/PreviewSmoke.playable` and confirm the VRSL fixture fields change.
 
-If the fixture assets need to be rebuilt, use `ManeuverForVRSL > Tests > Regenerate Preview Smoke Fixture`.
+If the fixture assets need to be rebuilt, use `ManeuverForVRC > Tests > Regenerate Preview Smoke Fixture`.
 
 ### Test Levels
 
@@ -224,4 +224,4 @@ If the fixture assets need to be rebuilt, use `ManeuverForVRSL > Tests > Regener
 - Level 3 real Timeline preview: opens `PreviewSmoke.unity`, evaluates a real SLM `StageLightTimelineTrack`, and verifies channel plus VRSL fixture fields.
 - Level 4 bake consistency: bakes the same PreviewSmoke Timeline, validates baked arrays/upload Timeline, and compares baked runtime playback against real preview values.
 
-The same EditMode assembly is used by the local CLI script and Unity Test Runner: `ManeuverForVRSL.EditorTests`.
+The same EditMode assembly is used by the local CLI script and Unity Test Runner: `ManeuverForVRC.EditorTests`.

@@ -1,7 +1,7 @@
 {
-  "name": "me.adzuki.maneuver-for-vrsl",
+  "name": "me.adzuki.maneuver-for-vrc",
   "version": "0.1.0",
-  "displayName": "Maneuver For VRSL",
+  "displayName": "Maneuver For VRC",
   "description": "VRChat-compatible Stage Light Maneuver authoring, baker, and VRSL runtime player.",
   "unity": "2022.3",
   "author": {

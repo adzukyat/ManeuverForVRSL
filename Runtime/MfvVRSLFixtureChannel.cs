@@ -4,10 +4,10 @@ using StageLightManeuver;
 using UnityEngine;
 using VRSL;
 
-namespace ManeuverForVRSL
+namespace ManeuverForVRC
 {
     [ExecuteAlways]
-    [AddComponentMenu("Maneuver For VRSL/MFV VRSL Fixture Channel")]
+    [AddComponentMenu("Maneuver For VRC/MFV VRSL Fixture Channel")]
     public class MfvVRSLFixtureChannel : StageLightChannelBase
     {
         [ChannelField(true, false)]

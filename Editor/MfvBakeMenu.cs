@@ -1,4 +1,4 @@
-using ManeuverForVRSL;
+using ManeuverForVRC;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -8,19 +8,19 @@ using UnityEngine.Playables;
 using UdonSharpEditor;
 #endif
 
-namespace ManeuverForVRSL.Editor
+namespace ManeuverForVRC.Editor
 {
     public static class MfvBakeMenu
     {
-        private const string PlayerName = "ManeuverForVRSL Baked Player";
+        private const string PlayerName = "ManeuverForVRC Baked Player";
 
-        [MenuItem("ManeuverForVRSL/Bake Selected Director")]
+        [MenuItem("ManeuverForVRC/Bake Selected Director")]
         public static void BakeSelectedDirector()
         {
             var director = GetSelectedDirector();
             if (director == null)
             {
-                Debug.LogError("[ManeuverForVRSL] Select a GameObject with a PlayableDirector, or select a PlayableDirector component.");
+                Debug.LogError("[ManeuverForVRC] Select a GameObject with a PlayableDirector, or select a PlayableDirector component.");
                 return;
             }
 
@@ -35,10 +35,10 @@ namespace ManeuverForVRSL.Editor
             var player = GetOrCreatePlayer(director);
             MfvBakeUtility.ConfigurePlayer(player, director, result);
             EditorSceneManager.MarkSceneDirty(director.gameObject.scene);
-            Debug.Log($"[ManeuverForVRSL] Configured runtime player '{player.name}'. Upload timeline: {AssetDatabase.GetAssetPath(result.uploadTimeline)}", player);
+            Debug.Log($"[ManeuverForVRC] Configured runtime player '{player.name}'. Upload timeline: {AssetDatabase.GetAssetPath(result.uploadTimeline)}", player);
         }
 
-        [MenuItem("ManeuverForVRSL/Bake Selected Director", true)]
+        [MenuItem("ManeuverForVRC/Bake Selected Director", true)]
         public static bool ValidateBakeSelectedDirector()
         {
             return GetSelectedDirector() != null;
@@ -70,7 +70,7 @@ namespace ManeuverForVRSL.Editor
             else
             {
                 playerObject = new GameObject(PlayerName);
-                Undo.RegisterCreatedObjectUndo(playerObject, "Create ManeuverForVRSL Player");
+                Undo.RegisterCreatedObjectUndo(playerObject, "Create ManeuverForVRC Player");
                 playerObject.transform.SetParent(director.transform, false);
             }
 

@@ -1,11 +1,11 @@
-using ManeuverForVRSL.Editor;
+using ManeuverForVRC.Editor;
 using NUnit.Framework;
 using StageLightManeuver;
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
 
-namespace ManeuverForVRSL.Tests
+namespace ManeuverForVRC.Tests
 {
     public class MfvBakeValidatorTests
     {

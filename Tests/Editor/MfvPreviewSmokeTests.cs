@@ -1,6 +1,6 @@
 using System.Collections;
 using System.Linq;
-using ManeuverForVRSL.Editor;
+using ManeuverForVRC.Editor;
 using NUnit.Framework;
 using StageLightManeuver;
 using UnityEditor;
@@ -15,12 +15,12 @@ using UdonSharp;
 using UdonSharpEditor;
 #endif
 
-namespace ManeuverForVRSL.Tests
+namespace ManeuverForVRC.Tests
 {
     public class MfvPreviewSmokeTests
     {
-        private const string MenuPlayerName = "ManeuverForVRSL Baked Player";
-        private const string DefaultBakeRoot = "Assets/ManeuverForVRSL";
+        private const string MenuPlayerName = "ManeuverForVRC Baked Player";
+        private const string DefaultBakeRoot = "Assets/ManeuverForVRC";
 
         [UnityTest]
         public IEnumerator Level3_RealTimelinePreview_UpdatesChannelAndVrslFixture()
@@ -213,7 +213,7 @@ namespace ManeuverForVRSL.Tests
                 }
 
                 var playerTransform = context.Director.transform.Find(MenuPlayerName);
-                Assert.NotNull(playerTransform, "Bake menu did not create the ManeuverForVRSL baked player.");
+                Assert.NotNull(playerTransform, "Bake menu did not create the ManeuverForVRC baked player.");
 
                 var player = playerTransform.GetComponent<MfvVRSLTimelinePlayer>();
                 Assert.NotNull(player, "Baked player is missing MfvVRSLTimelinePlayer.");

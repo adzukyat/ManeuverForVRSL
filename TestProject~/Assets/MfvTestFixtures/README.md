@@ -1,4 +1,4 @@
-# Maneuver For VRSL Test Fixtures
+# Maneuver For VRC Test Fixtures
 
 `PreviewSmoke.unity` and `PreviewSmoke.playable` are committed fixtures used by the Level 3/4 EditMode tests.
 
@@ -9,4 +9,4 @@ To inspect the same fixture manually:
 3. Open `Assets/MfvTestFixtures/PreviewSmoke.unity`.
 4. Scrub the `PreviewSmoke.playable` Timeline on the `PreviewSmoke Director` object.
 
-To rebuild the fixture, run `ManeuverForVRSL > Tests > Regenerate Preview Smoke Fixture`.
+To rebuild the fixture, run `ManeuverForVRC > Tests > Regenerate Preview Smoke Fixture`.

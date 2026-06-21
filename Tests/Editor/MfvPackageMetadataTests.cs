@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.IO;
-using ManeuverForVRSL.Editor;
+using ManeuverForVRC.Editor;
 using NUnit.Framework;
 using UnityEditor.PackageManager;
 
-namespace ManeuverForVRSL.Tests
+namespace ManeuverForVRC.Tests
 {
     public class MfvPackageMetadataTests
     {
@@ -12,7 +12,7 @@ namespace ManeuverForVRSL.Tests
         public void PackageImportableFiles_AllHaveMetaFiles()
         {
             var packageInfo = PackageInfo.FindForAssembly(typeof(MfvBakeUtility).Assembly);
-            Assert.NotNull(packageInfo, "Could not resolve the Maneuver For VRSL package from its editor assembly.");
+            Assert.NotNull(packageInfo, "Could not resolve the Maneuver For VRC package from its editor assembly.");
 
             var missing = new List<string>();
             CollectMissingMetaFiles(packageInfo.resolvedPath, packageInfo.resolvedPath, missing);

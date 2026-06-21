@@ -1,9 +1,9 @@
 {
-  "name": "ManeuverForVRSL.EditorUiTests",
-  "rootNamespace": "ManeuverForVRSL.Tests",
+  "name": "ManeuverForVRC.EditorUiTests",
+  "rootNamespace": "ManeuverForVRC.Tests",
   "references": [
-    "ManeuverForVRSL.Runtime",
-    "ManeuverForVRSL.Editor",
+    "ManeuverForVRC.Runtime",
+    "ManeuverForVRC.Editor",
     "Iridescenent.SLM.Runtime",
     "Iridescenent.SLM.Editor",
     "VRSL.Core",

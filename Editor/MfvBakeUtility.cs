@@ -4,7 +4,7 @@ using System.Linq;
 #if UDONSHARP
 using System.Reflection;
 #endif
-using ManeuverForVRSL;
+using ManeuverForVRC;
 using StageLightManeuver;
 using UnityEditor;
 using UnityEngine;
@@ -19,13 +19,13 @@ using UdonSharp.Compiler;
 using UdonSharpEditor;
 #endif
 
-namespace ManeuverForVRSL.Editor
+namespace ManeuverForVRC.Editor
 {
     public static class MfvBakeUtility
     {
-        public const string DefaultOutputFolder = "Assets/ManeuverForVRSL/Baked";
+        public const string DefaultOutputFolder = "Assets/ManeuverForVRC/Baked";
 #if UDONSHARP
-        public const string UdonSharpProgramAssetFolder = "Assets/ManeuverForVRSL/UdonSharpPrograms";
+        public const string UdonSharpProgramAssetFolder = "Assets/ManeuverForVRC/UdonSharpPrograms";
         public const string UdonSharpPlayerProgramAssetPath = UdonSharpProgramAssetFolder + "/MfvVRSLTimelinePlayer.asset";
 #endif
 
@@ -36,7 +36,7 @@ namespace ManeuverForVRSL.Editor
             {
                 foreach (var error in errors)
                 {
-                    Debug.LogError($"[ManeuverForVRSL] {error}", director);
+                    Debug.LogError($"[ManeuverForVRC] {error}", director);
                 }
 
                 return null;
@@ -68,7 +68,7 @@ namespace ManeuverForVRSL.Editor
             AssetDatabase.SaveAssets();
 
             stopwatch.Stop();
-            Debug.Log($"[ManeuverForVRSL] Baked {fixtures.Length} fixtures, {bakedAsset.ContinuousTrackCount} continuous tracks, {bakedAsset.EventTrackCount} event tracks in {stopwatch.ElapsedMilliseconds} ms. Asset: {bakedPath}", bakedAsset);
+            Debug.Log($"[ManeuverForVRC] Baked {fixtures.Length} fixtures, {bakedAsset.ContinuousTrackCount} continuous tracks, {bakedAsset.EventTrackCount} event tracks in {stopwatch.ElapsedMilliseconds} ms. Asset: {bakedPath}", bakedAsset);
 
             return new MfvBakeResult
             {
@@ -85,7 +85,7 @@ namespace ManeuverForVRSL.Editor
                 return;
             }
 
-            Undo.RecordObject(player, "Configure ManeuverForVRSL Player");
+            Undo.RecordObject(player, "Configure ManeuverForVRC Player");
             player.director = director;
             player.fixtures = result.fixtures;
             result.bakedAsset.CopyTo(player);
@@ -113,7 +113,7 @@ namespace ManeuverForVRSL.Editor
 
             if (programAsset == null)
             {
-                Debug.LogError("[ManeuverForVRSL] Failed to create the UdonSharp program asset for MfvVRSLTimelinePlayer.");
+                Debug.LogError("[ManeuverForVRC] Failed to create the UdonSharp program asset for MfvVRSLTimelinePlayer.");
                 return null;
             }
 
@@ -135,7 +135,7 @@ namespace ManeuverForVRSL.Editor
             var sourceScript = FindMonoScriptForType<MfvVRSLTimelinePlayer>();
             if (sourceScript == null)
             {
-                Debug.LogError("[ManeuverForVRSL] Could not locate the MfvVRSLTimelinePlayer MonoScript for UdonSharp setup.");
+                Debug.LogError("[ManeuverForVRC] Could not locate the MfvVRSLTimelinePlayer MonoScript for UdonSharp setup.");
                 return null;
             }
 
@@ -400,7 +400,7 @@ namespace ManeuverForVRSL.Editor
             var sourcePath = AssetDatabase.GetAssetPath(sourceTimeline);
             if (string.IsNullOrEmpty(sourcePath))
             {
-                Debug.LogError($"[ManeuverForVRSL] Cannot create upload Timeline because '{sourceTimeline.name}' is not saved as an asset.", sourceTimeline);
+                Debug.LogError($"[ManeuverForVRC] Cannot create upload Timeline because '{sourceTimeline.name}' is not saved as an asset.", sourceTimeline);
                 return null;
             }
 
@@ -408,7 +408,7 @@ namespace ManeuverForVRSL.Editor
             var path = AssetDatabase.GenerateUniqueAssetPath($"{outputFolder}/{SanitizeAssetName(uploadName)}.playable");
             if (!AssetDatabase.CopyAsset(sourcePath, path))
             {
-                Debug.LogError($"[ManeuverForVRSL] Failed to copy Timeline asset from '{sourcePath}' to '{path}'.", sourceTimeline);
+                Debug.LogError($"[ManeuverForVRC] Failed to copy Timeline asset from '{sourcePath}' to '{path}'.", sourceTimeline);
                 return null;
             }
 
@@ -416,7 +416,7 @@ namespace ManeuverForVRSL.Editor
             var uploadTimeline = AssetDatabase.LoadAssetAtPath<TimelineAsset>(path);
             if (uploadTimeline == null)
             {
-                Debug.LogError($"[ManeuverForVRSL] Copied upload Timeline could not be loaded from '{path}'.", sourceTimeline);
+                Debug.LogError($"[ManeuverForVRC] Copied upload Timeline could not be loaded from '{path}'.", sourceTimeline);
                 return null;
             }
 

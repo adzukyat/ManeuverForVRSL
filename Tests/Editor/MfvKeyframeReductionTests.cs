@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using ManeuverForVRSL.Editor;
+using ManeuverForVRC.Editor;
 using NUnit.Framework;
 
-namespace ManeuverForVRSL.Tests
+namespace ManeuverForVRC.Tests
 {
     public class MfvKeyframeReductionTests
     {

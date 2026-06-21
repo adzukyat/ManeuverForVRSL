@@ -57,7 +57,7 @@ set +e
   -projectPath "${PROJECT_PATH}" \
   -runTests \
   -testPlatform EditMode \
-  -assemblyNames ManeuverForVRSL.EditorUiTests \
+  -assemblyNames ManeuverForVRC.EditorUiTests \
   -testResults "${RESULTS_XML}" \
   -logFile "${EDITOR_LOG}"
 exit_code=$?

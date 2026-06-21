@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace ManeuverForVRSL.Editor
+namespace ManeuverForVRC.Editor
 {
     public static class MfvKeyframeReduction
     {

@@ -7,14 +7,14 @@ using UdonSharp;
 using VRC.SDKBase;
 #endif
 
-namespace ManeuverForVRSL
+namespace ManeuverForVRC
 {
 #if UDONSHARP
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
-    [AddComponentMenu("Maneuver For VRSL/MFV VRSL Timeline Player")]
+    [AddComponentMenu("Maneuver For VRC/MFV VRSL Timeline Player")]
     public class MfvVRSLTimelinePlayer : UdonSharpBehaviour
 #else
-    [AddComponentMenu("Maneuver For VRSL/MFV VRSL Timeline Player")]
+    [AddComponentMenu("Maneuver For VRC/MFV VRSL Timeline Player")]
     public class MfvVRSLTimelinePlayer : MonoBehaviour
 #endif
     {

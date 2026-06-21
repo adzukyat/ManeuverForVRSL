@@ -1,9 +1,9 @@
-using ManeuverForVRSL;
+using ManeuverForVRC;
 using NUnit.Framework;
 using UnityEngine;
 using VRSL;
 
-namespace ManeuverForVRSL.Tests
+namespace ManeuverForVRC.Tests
 {
     public class MfvVRSLTimelinePlayerTests
     {

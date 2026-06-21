@@ -206,7 +206,7 @@
         "com.unity.ai.navigation": "1.1.5"
       }
     },
-    "me.adzuki.maneuver-for-vrsl": {
+    "me.adzuki.maneuver-for-vrc": {
       "version": "file:../..",
       "depth": 0,
       "source": "local",
