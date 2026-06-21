@@ -48,6 +48,13 @@ namespace StageLightManeuver
             InitLookAt();
         }
 
+        public override List<Type> GetAddablePropertyTypes()
+        {
+            var types = base.GetAddablePropertyTypes();
+            types.Add(typeof(LookAtProperty));
+            return types;
+        }
+
 
         public void InitLookAt()
         {

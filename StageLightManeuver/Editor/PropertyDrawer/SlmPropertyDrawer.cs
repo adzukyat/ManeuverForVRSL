@@ -27,6 +27,16 @@ namespace StageLightManeuver
             EditorGUI.BeginDisabledGroup(propertyOverride == false);
 
             var slmProperty = GetValueFromCache(property) as SlmProperty;
+            if (slmProperty == null)
+            {
+                return;
+            }
+
+            if (EnsureDrawableValues(property, slmProperty))
+            {
+                slmProperty = GetValueFromCache(property) as SlmProperty ?? slmProperty;
+            }
+
             DrawToggleController(slmProperty);
 
             var fields = slmProperty.GetType().GetFields().ToList();
@@ -43,14 +53,31 @@ namespace StageLightManeuver
             foreach (var f in fields)
             {
                 // Draw SlmToggleValue
+                var childProperty = property.FindPropertyRelative(f.Name);
+                if (childProperty == null)
+                {
+                    if (EnsureDrawableField(property, slmProperty, f.Name))
+                    {
+                        childProperty = property.FindPropertyRelative(f.Name);
+                    }
+
+                    if (childProperty == null)
+                    {
+                        continue;
+                    }
+                }
+
                 EditorGUI.BeginChangeCheck();
                 try
                 {
-                    EditorGUILayout.PropertyField(property.FindPropertyRelative(f.Name), true);
+                    EditorGUILayout.PropertyField(childProperty, true);
                 }
                 catch (NullReferenceException e)
                 {
-                    Debug.LogWarning(slmProperty.propertyName + "." + f.Name + " is null.\n" + e.Message);
+                    if (!EnsureDrawableField(property, slmProperty, f.Name))
+                    {
+                        Debug.LogWarning(slmProperty.propertyName + "." + f.Name + " is null.\n" + e.Message);
+                    }
                 }
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -62,6 +89,56 @@ namespace StageLightManeuver
 
             GUILayout.Space(SlmEditorStyleConst.SlmPropertyBottomMargin);
             EditorGUI.EndDisabledGroup();
+        }
+
+        private static bool EnsureDrawableValues(SerializedProperty property, SlmProperty slmProperty)
+        {
+            var changed = false;
+            if (slmProperty is SlmAdditionalProperty additionalProperty)
+            {
+                changed |= additionalProperty.clockOverride == null ||
+                           additionalProperty.clockOverride.value == null ||
+                           additionalProperty.clockOverride.value.arrayStaggerValue == null ||
+                           additionalProperty.clockOverride.sortOrder == 0;
+                additionalProperty.EnsureClockOverride();
+            }
+
+            if (slmProperty is LightColorProperty lightColorProperty)
+            {
+                changed |= lightColorProperty.EnsureValues();
+            }
+
+            if (changed)
+            {
+                WriteBackManagedReference(property, slmProperty);
+            }
+
+            return changed;
+        }
+
+        private static bool EnsureDrawableField(SerializedProperty property, SlmProperty slmProperty, string fieldName)
+        {
+            if (slmProperty is LightColorProperty lightColorProperty &&
+                fieldName == nameof(LightColorProperty.lightToggleColor))
+            {
+                lightColorProperty.EnsureValues();
+                WriteBackManagedReference(property, slmProperty);
+                return true;
+            }
+
+            return false;
+        }
+
+        private static void WriteBackManagedReference(SerializedProperty property, SlmProperty slmProperty)
+        {
+            if (property.propertyType == SerializedPropertyType.ManagedReference)
+            {
+                property.managedReferenceValue = slmProperty;
+            }
+
+            property.serializedObject.ApplyModifiedProperties();
+            property.serializedObject.Update();
+            RemoveValueFromCache(property);
         }
 
         protected void DrawHeader(Rect position, SerializedProperty property, GUIContent label, bool withToggle = true)

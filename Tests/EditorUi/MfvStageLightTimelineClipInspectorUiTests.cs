@@ -1,4 +1,6 @@
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using StageLightManeuver;
 using UnityEditor;
@@ -23,6 +25,13 @@ namespace ManeuverForVRC.Tests
             var fixtureObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
             UnityEditor.Editor inspector = null;
             InspectorGuiSmokeWindow window = null;
+            var logMessages = new List<string>();
+            void CaptureLog(string condition, string stackTrace, LogType type)
+            {
+                logMessages.Add(condition);
+            }
+
+            Application.logMessageReceived += CaptureLog;
             try
             {
                 var track = timeline.CreateTrack<StageLightTimelineTrack>(null, "Fresh SLM");
@@ -30,7 +39,11 @@ namespace ManeuverForVRC.Tests
                 var slmClip = (StageLightTimelineClip)clip.asset;
                 slmClip.behaviour.stageLightQueueData.stageLightProperties.Add(new LightProperty());
                 slmClip.behaviour.stageLightQueueData.stageLightProperties.Add(new LightIntensityProperty());
-                slmClip.behaviour.stageLightQueueData.stageLightProperties.Add(new LightColorProperty());
+                var lightColorProperty = new LightColorProperty
+                {
+                    lightToggleColor = null
+                };
+                slmClip.behaviour.stageLightQueueData.stageLightProperties.Add(lightColorProperty);
 
                 var stageLightFixture = fixtureObject.AddComponent<StageLightFixture>();
                 fixtureObject.AddComponent<MfvVRSLFixtureChannel>();
@@ -53,9 +66,18 @@ namespace ManeuverForVRC.Tests
 
                 Assert.IsTrue(window.WasDrawn, "StageLightTimelineClip inspector was not drawn in the smoke window.");
                 Assert.IsNull(window.Exception, window.Exception?.ToString());
+                Assert.NotNull(lightColorProperty.lightToggleColor);
+                Assert.NotNull(lightColorProperty.lightToggleColor.value);
+                Assert.IsFalse(
+                    logMessages.Any(message =>
+                        message.Contains("Light Color.lightToggleColor") ||
+                        message.Contains("Binding is null")),
+                    string.Join("\n", logMessages));
             }
             finally
             {
+                Application.logMessageReceived -= CaptureLog;
+
                 if (window != null)
                 {
                     window.Close();

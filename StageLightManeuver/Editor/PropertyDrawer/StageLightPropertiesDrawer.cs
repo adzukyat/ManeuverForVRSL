@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
+using UnityEditor.Timeline;
 using UnityEngine;
 
 namespace StageLightManeuver
@@ -176,8 +177,10 @@ namespace StageLightManeuver
         {
             EditorGUI.BeginChangeCheck();
             var selectList = new List<string>();
+            var addablePropertyTypes = GetAddablePropertyTypes(serializedObject);
+            var propertyTypes = addablePropertyTypes ?? SlmEditorUtility.SlmPropertyTypes;
 
-            SlmEditorUtility.SlmPropertyTypes.ForEach(t =>
+            propertyTypes.ForEach(t =>
             {
                 if (t != typeof(RollProperty)) selectList.Add(t.Name);
             });
@@ -196,8 +199,22 @@ namespace StageLightManeuver
             EditorGUI.EndDisabledGroup();
             if (EditorGUI.EndChangeCheck())
             {
+                if (select <= 0)
+                {
+                    return;
+                }
+
                 var type = SlmEditorUtility.GetTypeByClassName(selectList[select]);
+                if (type == null)
+                {
+                    return;
+                }
+
                 var property = Activator.CreateInstance(type) as SlmProperty;
+                if (property == null)
+                {
+                    return;
+                }
 
                 if (property.GetType() == typeof(ManualLightArrayProperty))
                 {
@@ -221,6 +238,27 @@ namespace StageLightManeuver
                 serializedObject.ApplyModifiedProperties();
                 EditorUtility.SetDirty(serializedObject.targetObject);
             }
+        }
+
+        private static List<Type> GetAddablePropertyTypes(SerializedObject serializedObject)
+        {
+            if (serializedObject == null || serializedObject.targetObjects == null)
+            {
+                return null;
+            }
+
+            var hasTimelineClip = false;
+            var types = new List<Type>();
+            foreach (var targetObject in serializedObject.targetObjects)
+            {
+                if (targetObject is StageLightTimelineClip timelineClip)
+                {
+                    hasTimelineClip = true;
+                    types.AddRange(timelineClip.GetAddablePropertyTypes(TimelineEditor.masterDirector, false));
+                }
+            }
+
+            return hasTimelineClip ? types.Distinct().ToList() : null;
         }
     }
 }

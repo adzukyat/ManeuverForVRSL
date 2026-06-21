@@ -39,7 +39,11 @@ namespace StageLightManeuver.StageLightTimeline.Editor
         {
             stageLightTimelineClip = serializedObject.targetObject as StageLightTimelineClip;
             if(stageLightTimelineClip == null || stageLightTimelineClip.stopEditorUiUpdate)  return;
-            stageLightTimelineClip.EnsureRequiredProperties();
+            if (stageLightTimelineClip.EnsureRequiredProperties())
+            {
+                SlmBaseDrawer.ClearCache();
+                EditorUtility.SetDirty(stageLightTimelineClip);
+            }
             serializedObject.Update();
             BeginInspector();
         }
@@ -63,7 +67,11 @@ namespace StageLightManeuver.StageLightTimeline.Editor
             EditorGUI.indentLevel++;
             EditorGUI.BeginDisabledGroup( stageLightTimelineClip.syncReferenceProfile);
                 // isMultiSelect = false;
-                stageLightTimelineClip.EnsureRequiredProperties();
+                if (stageLightTimelineClip.EnsureRequiredProperties())
+                {
+                    SlmBaseDrawer.ClearCache();
+                    EditorUtility.SetDirty(stageLightTimelineClip);
+                }
                 var stageLightProperties = stageLightTimelineClip.StageLightQueueData.stageLightProperties;
                 stageLightProperties.RemoveAll(property => property == null);
                 serializedObject.Update();

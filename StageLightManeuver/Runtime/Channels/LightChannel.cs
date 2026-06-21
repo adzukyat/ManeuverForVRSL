@@ -121,6 +121,15 @@ namespace StageLightManeuver
 
         }
 
+        public override List<Type> GetAddablePropertyTypes()
+        {
+            var types = base.GetAddablePropertyTypes();
+            types.Add(typeof(LightFlickerProperty));
+            types.Add(typeof(ManualLightArrayProperty));
+            types.Add(typeof(ManualColorArrayProperty));
+            return types.Distinct().ToList();
+        }
+
         public override void EvaluateQue(float currentTime)
         {
             if(lights == null) return;

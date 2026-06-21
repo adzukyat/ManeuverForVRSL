@@ -107,6 +107,40 @@ namespace ManeuverForVRC.Tests
         }
 
         [Test]
+        public void Level3_FreshTimelineClipWithoutBinding_DoesNotWarnOnEvaluate()
+        {
+            var timeline = ScriptableObject.CreateInstance<TimelineAsset>();
+            var directorObject = new GameObject("Unbound Fresh Timeline Director");
+            try
+            {
+                var track = timeline.CreateTrack<StageLightTimelineTrack>(null, "Unbound Fresh SLM");
+                var clip = track.CreateClip<StageLightTimelineClip>();
+                clip.start = 0;
+                clip.duration = 1;
+
+                var clipEditor = new StageLightTimelineClipEditor();
+                Assert.DoesNotThrow(() => clipEditor.OnCreate(clip, track, null));
+
+                var director = directorObject.AddComponent<PlayableDirector>();
+                director.playableAsset = timeline;
+                director.playOnAwake = false;
+                director.timeUpdateMode = DirectorUpdateMode.Manual;
+
+                Assert.DoesNotThrow(() =>
+                {
+                    director.time = 0.5;
+                    director.Evaluate();
+                });
+                LogAssert.NoUnexpectedReceived();
+            }
+            finally
+            {
+                Object.DestroyImmediate(timeline);
+                Object.DestroyImmediate(directorObject);
+            }
+        }
+
+        [Test]
         public void Level3_FreshTimelineClipEvaluation_AddsScalarVrslPropertiesFromFixtureDefaults()
         {
             var timeline = ScriptableObject.CreateInstance<TimelineAsset>();
@@ -175,6 +209,52 @@ namespace ManeuverForVRC.Tests
                 Assert.IsFalse(vrslFixture.enableDMXChannels);
                 Assert.IsFalse(vrslFixture.enableStrobe);
                 LogAssert.NoUnexpectedReceived();
+            }
+            finally
+            {
+                Object.DestroyImmediate(timeline);
+                Object.DestroyImmediate(directorObject);
+                Object.DestroyImmediate(fixtureObject);
+            }
+        }
+
+        [Test]
+        public void Level3_AddablePropertyTypes_AreFilteredToBoundChannels()
+        {
+            var timeline = ScriptableObject.CreateInstance<TimelineAsset>();
+            var directorObject = new GameObject("Addable Property Director");
+            var fixtureObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            try
+            {
+                var track = timeline.CreateTrack<StageLightTimelineTrack>(null, "SLM Addable Filter");
+                var clip = track.CreateClip<StageLightTimelineClip>();
+                var slmClip = (StageLightTimelineClip)clip.asset;
+
+                var director = directorObject.AddComponent<PlayableDirector>();
+                director.playableAsset = timeline;
+                director.playOnAwake = false;
+                director.timeUpdateMode = DirectorUpdateMode.Manual;
+
+                var stageLightFixture = fixtureObject.AddComponent<StageLightFixture>();
+                fixtureObject.AddComponent<LightChannel>();
+                fixtureObject.AddComponent<LightPanChannel>();
+                stageLightFixture.Init();
+                director.SetGenericBinding(track, stageLightFixture);
+
+                var addableTypes = slmClip.GetAddablePropertyTypes(director);
+
+                Assert.That(addableTypes, Has.Member(typeof(LightProperty)));
+                Assert.That(addableTypes, Has.Member(typeof(LightColorProperty)));
+                Assert.That(addableTypes, Has.Member(typeof(LightIntensityProperty)));
+                Assert.That(addableTypes, Has.Member(typeof(LightFlickerProperty)));
+                Assert.That(addableTypes, Has.Member(typeof(ManualLightArrayProperty)));
+                Assert.That(addableTypes, Has.Member(typeof(ManualColorArrayProperty)));
+                Assert.That(addableTypes, Has.Member(typeof(PanProperty)));
+                Assert.That(addableTypes, Has.Member(typeof(ManualPanTiltProperty)));
+                Assert.That(addableTypes, Has.No.Member(typeof(MaterialFloatProperty)));
+                Assert.That(addableTypes, Has.No.Member(typeof(MaterialColorProperty)));
+                Assert.That(addableTypes, Has.No.Member(typeof(EnvironmentProperty)));
+                Assert.That(addableTypes, Has.No.Member(typeof(ReflectionProbeProperty)));
             }
             finally
             {

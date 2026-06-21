@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -122,6 +123,13 @@ namespace StageLightManeuver
         public override void Init()
         {
             PropertyTypes.Add(typeof(TiltProperty));
+        }
+
+        public override List<Type> GetAddablePropertyTypes()
+        {
+            var types = base.GetAddablePropertyTypes();
+            types.Add(typeof(ManualPanTiltProperty));
+            return types;
         }
     }
 }

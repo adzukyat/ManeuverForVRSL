@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace StageLightManeuver
@@ -55,6 +56,13 @@ namespace StageLightManeuver
         {
             PropertyTypes.Add(typeof(PanProperty));
             // rotationVector = _lightTransformType == LightTransformType.Pan ? Vector3.up : Vector3.left;
+        }
+
+        public override List<Type> GetAddablePropertyTypes()
+        {
+            var types = base.GetAddablePropertyTypes();
+            types.Add(typeof(ManualPanTiltProperty));
+            return types;
         }
 
         public override void EvaluateQue(float currentTime)

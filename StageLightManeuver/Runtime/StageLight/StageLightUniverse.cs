@@ -107,6 +107,21 @@ namespace StageLightManeuver
             }
         }
 
+        public override List<Type> GetAddablePropertyTypes()
+        {
+            Init();
+            var types = new List<Type>();
+            foreach (var stageLight in stageLightFixtures)
+            {
+                if (stageLight != null)
+                {
+                    types.AddRange(stageLight.GetAddablePropertyTypes());
+                }
+            }
+
+            return types.Distinct().ToList();
+        }
+
         public override void UpdateChannel()
         {
             foreach (var stageLightBase in stageLightFixtures)

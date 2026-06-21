@@ -107,5 +107,10 @@ namespace StageLightManeuver
         public virtual void InitializeTimelineProperties(StageLightQueueData stageLightQueueData, List<StageLightFixture> stageLightFixtures)
         {
         }
+
+        public virtual List<Type> GetAddablePropertyTypes()
+        {
+            return new List<Type>(PropertyTypes);
+        }
     }
 }

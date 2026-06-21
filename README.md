@@ -180,21 +180,6 @@ scripts/bootstrap-test-project.sh
 scripts/test-editmode.sh
 ```
 
-### Regenerate Stage Light Maneuver
-
-The integrated SLM authoring layer is generated from the upstream repository plus the patch in `patches/stage-light-maneuver-vrchat.patch`.
-This rewrites `StageLightManeuver/`:
-
-```sh
-scripts/vendor-stage-light-maneuver.sh
-```
-
-To try another upstream ref, run for example:
-
-```sh
-SLM_UPSTREAM_REF=v1.0.3 scripts/vendor-stage-light-maneuver.sh
-```
-
 The test script defaults to `TestProject~` and Unity `2022.3.22f1` installed by Unity Hub. If Unity is installed elsewhere, set `UNITY_EXECUTABLE`:
 
 ```sh

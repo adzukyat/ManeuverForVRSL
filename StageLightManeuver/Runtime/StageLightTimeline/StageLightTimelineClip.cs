@@ -67,7 +67,13 @@ namespace StageLightManeuver
 
             var playabledirector = owner.GetComponent<PlayableDirector>();
 
-            EnsureFixtureProperties(playabledirector);
+            var changed = EnsureFixtureProperties(playabledirector, false);
+#if UNITY_EDITOR
+            if (changed)
+            {
+                EditorUtility.SetDirty(this);
+            }
+#endif
 
             if (syncReferenceProfile && referenceStageLightProfile != null)
             {
@@ -88,6 +94,18 @@ namespace StageLightManeuver
             return AddAllProperty(playabledirector, queData, logMissingBinding);
         }
 
+        public List<Type> GetAddablePropertyTypes(PlayableDirector playabledirector, bool logMissingBinding = false)
+        {
+            var types = new List<Type>();
+            var bindings = CollectBoundFixtureBases(playabledirector, logMissingBinding, out _);
+            foreach (var binding in bindings)
+            {
+                types.AddRange(binding.GetAddablePropertyTypes());
+            }
+
+            return types.Distinct().ToList();
+        }
+
         private bool AddAllProperty(PlayableDirector playabledirector, StageLightQueueData queData, bool logMissingBinding)
         {
             var changed = false;
@@ -105,56 +123,11 @@ namespace StageLightManeuver
                 changed = true;
             }
             
-            var isInSubTrack = false;
             var propertyTypes = new List<Type>();
-            var initializerBindings = new List<StageLightFixtureBase>();
-            foreach (var tAssetOutput in playabledirector.playableAsset.outputs)
+            var initializerBindings = CollectBoundFixtureBases(playabledirector, logMissingBinding, out var isInSubTrack);
+            foreach (var initializerBinding in initializerBindings)
             {
-                if(tAssetOutput.sourceObject == null) continue;
-                if(tAssetOutput.sourceObject.GetType() == typeof(StageLightTimelineTrack))
-                {
-                    var primaryTrack = tAssetOutput.sourceObject as TrackAsset;
-                    // オーバーライドトラックを取得
-                    var subTracks = primaryTrack.GetChildTracks() as List<TrackAsset>;
-                    var tracks = new List<TrackAsset>();
-                    tracks.Add(primaryTrack);
-                    if (subTracks != null)
-                    {
-                        tracks.AddRange(subTracks);
-                    }
-
-                    foreach (var track in tracks)
-                    {
-                        foreach (var timelineClip in track.GetClips())
-                        {
-                            var stageLightTimelineClip = timelineClip.asset as StageLightTimelineClip;
-                            if (stageLightTimelineClip == this)
-                            {
-                                isInSubTrack = track.isSubTrack;
-                                // オーバーライドトラック内のクリップの場合、プライマリトラックのバインディングを
-                                // プライマリトラックの場合は直接バインディングを取得
-                                var binding = playabledirector.GetGenericBinding((isInSubTrack) ? track.parent as TrackAsset : track);
-                                if (binding != null)
-                                {
-                                    // Debug.Log(track.name + " is binding to " + binding);
-                                    var stageLightFixtureBase = binding as StageLightFixtureBase;
-                                    if (stageLightFixtureBase != null)
-                                    {
-                                        propertyTypes.AddRange(stageLightFixtureBase.GetAllPropertyType());
-                                        initializerBindings.Add(stageLightFixtureBase);
-                                    }
-                                }
-                                else
-                                {
-                                    if (logMissingBinding)
-                                    {
-                                        Debug.LogWarning("Binding is null\n" + track.name + " is not binding to StageLightFixtureBase");
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                propertyTypes.AddRange(initializerBinding.GetAllPropertyType());
             }
             propertyTypes = propertyTypes.Distinct().ToList();
 
@@ -178,13 +151,74 @@ namespace StageLightManeuver
                 }
             }
 
-            foreach (var initializerBinding in initializerBindings.Distinct())
+            foreach (var initializerBinding in initializerBindings)
             {
                 initializerBinding.InitializeTimelineProperties(queData);
                 changed = true;
             }
 
+            changed |= EnsurePropertyValues(queData);
+
             return changed;
+        }
+
+        private List<StageLightFixtureBase> CollectBoundFixtureBases(
+            PlayableDirector playabledirector,
+            bool logMissingBinding,
+            out bool isInSubTrack)
+        {
+            isInSubTrack = false;
+            var bindings = new List<StageLightFixtureBase>();
+            if (playabledirector == null || playabledirector.playableAsset == null)
+            {
+                return bindings;
+            }
+
+            foreach (var tAssetOutput in playabledirector.playableAsset.outputs)
+            {
+                if(tAssetOutput.sourceObject == null) continue;
+                if(tAssetOutput.sourceObject.GetType() == typeof(StageLightTimelineTrack))
+                {
+                    var primaryTrack = tAssetOutput.sourceObject as TrackAsset;
+                    // オーバーライドトラックを取得
+                    var tracks = new List<TrackAsset>();
+                    tracks.Add(primaryTrack);
+                    tracks.AddRange(primaryTrack.GetChildTracks());
+
+                    foreach (var track in tracks)
+                    {
+                        foreach (var timelineClip in track.GetClips())
+                        {
+                            var stageLightTimelineClip = timelineClip.asset as StageLightTimelineClip;
+                            if (stageLightTimelineClip == this)
+                            {
+                                isInSubTrack = track.isSubTrack;
+                                // オーバーライドトラック内のクリップの場合、プライマリトラックのバインディングを
+                                // プライマリトラックの場合は直接バインディングを取得
+                                var binding = playabledirector.GetGenericBinding((isInSubTrack) ? track.parent as TrackAsset : track);
+                                if (binding != null)
+                                {
+                                    // Debug.Log(track.name + " is binding to " + binding);
+                                    var stageLightFixtureBase = binding as StageLightFixtureBase;
+                                    if (stageLightFixtureBase != null)
+                                    {
+                                        bindings.Add(stageLightFixtureBase);
+                                    }
+                                }
+                                else
+                                {
+                                    if (logMissingBinding)
+                                    {
+                                        Debug.LogWarning("Binding is null\n" + track.name + " is not binding to StageLightFixtureBase");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return bindings.Distinct().ToList();
         }
 
         private static bool HasFixtureProperties(StageLightQueueData queData)
@@ -219,25 +253,55 @@ namespace StageLightManeuver
             EnsureRequiredProperties();
         }
 
-        public void EnsureRequiredProperties()
+        public bool EnsureRequiredProperties()
         {
+            var changed = false;
+
             if (behaviour == null)
             {
                 behaviour = new StageLightTimelineBehaviour();
+                changed = true;
             }
 
             if (behaviour.stageLightQueueData == null ||
                 behaviour.stageLightQueueData.stageLightProperties == null)
             {
                 behaviour.Init();
+                changed = true;
             }
 
+            var properties = behaviour.stageLightQueueData.stageLightProperties;
+            var missingClock = properties.Find(x => x?.GetType() == typeof(ClockProperty)) == null;
+            var missingOrder = properties.Find(x => x?.GetType() == typeof(StageLightOrderProperty)) == null;
             behaviour.CheckRequiredProperties();
+            changed |= missingClock || missingOrder;
+            changed |= EnsurePropertyValues(behaviour.stageLightQueueData);
+            return changed;
+        }
 
-            foreach (var additionalProperty in behaviour.stageLightQueueData.stageLightProperties.OfType<SlmAdditionalProperty>())
+        private static bool EnsurePropertyValues(StageLightQueueData queueData)
+        {
+            if (queueData == null || queueData.stageLightProperties == null)
             {
+                return false;
+            }
+
+            var changed = false;
+            foreach (var additionalProperty in queueData.stageLightProperties.OfType<SlmAdditionalProperty>())
+            {
+                changed |= additionalProperty.clockOverride == null ||
+                           additionalProperty.clockOverride.value == null ||
+                           additionalProperty.clockOverride.value.arrayStaggerValue == null ||
+                           additionalProperty.clockOverride.sortOrder == 0;
                 additionalProperty.EnsureClockOverride();
             }
+
+            foreach (var lightColorProperty in queueData.stageLightProperties.OfType<LightColorProperty>())
+            {
+                changed |= lightColorProperty.EnsureValues();
+            }
+
+            return changed;
         }
 
         public void OverwriteDiffProperty()

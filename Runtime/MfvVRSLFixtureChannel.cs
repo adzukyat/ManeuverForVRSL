@@ -72,6 +72,16 @@ namespace ManeuverForVRC
             }
         }
 
+        public override List<Type> GetAddablePropertyTypes()
+        {
+            var types = base.GetAddablePropertyTypes();
+            types.Add(typeof(LightFlickerProperty));
+            types.Add(typeof(ManualLightArrayProperty));
+            types.Add(typeof(ManualColorArrayProperty));
+            types.Add(typeof(ManualPanTiltProperty));
+            return types;
+        }
+
         public override void EvaluateQue(float currentTime)
         {
             base.EvaluateQue(currentTime);
@@ -118,11 +128,7 @@ namespace ManeuverForVRC
             var color = FindProperty<LightColorProperty>(stageLightQueueData);
             if (color != null)
             {
-                if (color.lightToggleColor == null)
-                {
-                    color.lightToggleColor = new SlmToggleValue<Gradient>();
-                }
-
+                color.EnsureValues();
                 color.lightToggleColor.value = CreateConstantGradient(vrslFixture.lightColorTint);
                 color.propertyOverride = true;
                 color.lightToggleColor.propertyOverride = true;

@@ -130,6 +130,14 @@ namespace StageLightManeuver
             InitializeTimelineProperties(stageLightQueueData, stageLightFixtures);
         }
 
+        public override List<Type> GetAddablePropertyTypes()
+        {
+            Init();
+            var types = new List<Type>();
+            types.AddRange(StageLightChannels.SelectMany(channel => channel.GetAddablePropertyTypes()));
+            return types.Distinct().ToList();
+        }
+
         internal void InitializeTimelineProperties(StageLightQueueData stageLightQueueData, List<StageLightFixture> orderedFixtures)
         {
             if (stageLightQueueData == null)
