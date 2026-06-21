@@ -4,6 +4,10 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Playables;
 
+#if UDONSHARP
+using UdonSharpEditor;
+#endif
+
 namespace ManeuverForVRSL.Editor
 {
     public static class MfvBakeMenu
@@ -73,7 +77,12 @@ namespace ManeuverForVRSL.Editor
             var player = playerObject.GetComponent<MfvVRSLTimelinePlayer>();
             if (player == null)
             {
+#if UDONSHARP
+                MfvBakeUtility.EnsurePlayerProgramAsset();
+                player = UdonSharpUndo.AddComponent<MfvVRSLTimelinePlayer>(playerObject);
+#else
                 player = Undo.AddComponent<MfvVRSLTimelinePlayer>(playerObject);
+#endif
             }
 
             return player;

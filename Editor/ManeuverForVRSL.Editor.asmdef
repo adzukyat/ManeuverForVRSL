@@ -6,7 +6,10 @@
     "Iridescenent.SLM.Runtime",
     "VRSL.Core",
     "VRC.SDKBase",
+    "VRC.Udon",
+    "VRC.Udon.Editor",
     "UdonSharp.Runtime",
+    "UdonSharp.Editor",
     "Unity.Timeline"
   ],
   "includePlatforms": [

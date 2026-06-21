@@ -10,10 +10,18 @@ using UnityEngine.Playables;
 using UnityEngine.TestTools;
 using UnityEngine.Timeline;
 
+#if UDONSHARP
+using UdonSharp;
+using UdonSharpEditor;
+#endif
+
 namespace ManeuverForVRSL.Tests
 {
     public class MfvPreviewSmokeTests
     {
+        private const string MenuPlayerName = "ManeuverForVRSL Baked Player";
+        private const string DefaultBakeRoot = "Assets/ManeuverForVRSL";
+
         [UnityTest]
         public IEnumerator Level3_RealTimelinePreview_UpdatesChannelAndVrslFixture()
         {
@@ -178,6 +186,88 @@ namespace ManeuverForVRSL.Tests
                 MfvPreviewSmokeFixtureBuilder.CleanBakeOutputRoot();
             }
         }
+
+#if UDONSHARP
+        [Test]
+        public void Level4_BakeMenu_CreatesUploadReadyUdonSharpPlayer()
+        {
+            var context = MfvPreviewSmokeFixtureBuilder.OpenFreshScene();
+            AssertPreviewContext(context);
+
+            var hadDefaultBakeRoot = AssetDatabase.IsValidFolder(DefaultBakeRoot);
+            var hadDefaultBakeOutput = AssetDatabase.IsValidFolder(MfvBakeUtility.DefaultOutputFolder);
+            var hadProgramAssetFolder = AssetDatabase.IsValidFolder(MfvBakeUtility.UdonSharpProgramAssetFolder);
+            var hadProgramAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(MfvBakeUtility.UdonSharpPlayerProgramAssetPath) != null;
+            string generatedSerializedProgramPath = null;
+
+            try
+            {
+                Selection.activeGameObject = context.Director.gameObject;
+                MfvBakeMenu.BakeSelectedDirector();
+
+                var programAsset = UdonSharpProgramAsset.GetProgramAssetForClass(typeof(MfvVRSLTimelinePlayer));
+                Assert.NotNull(programAsset, "Bake menu did not create a UdonSharpProgramAsset for MfvVRSLTimelinePlayer.");
+                if (!hadProgramAsset && AssetDatabase.TryGetGUIDAndLocalFileIdentifier(programAsset, out var programGuid, out long _))
+                {
+                    generatedSerializedProgramPath = $"Assets/SerializedUdonPrograms/{programGuid}.asset";
+                }
+
+                var playerTransform = context.Director.transform.Find(MenuPlayerName);
+                Assert.NotNull(playerTransform, "Bake menu did not create the ManeuverForVRSL baked player.");
+
+                var player = playerTransform.GetComponent<MfvVRSLTimelinePlayer>();
+                Assert.NotNull(player, "Baked player is missing MfvVRSLTimelinePlayer.");
+                Assert.That(player.fixtures, Has.Length.EqualTo(1), "Baked player should reference the baked VRSL fixture.");
+                Assert.That(player.keyTimes, Is.Not.Empty, "Baked player should receive continuous key data.");
+
+                var backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(player);
+                Assert.NotNull(backingBehaviour, "Baked player has no backing UdonBehaviour.");
+                Assert.IsTrue(
+                    UdonSharpEditorUtility.IsUdonSharpBehaviour(backingBehaviour),
+                    "Baked player's backing UdonBehaviour is not associated with a valid U# program asset.");
+                Assert.NotNull(backingBehaviour.programSource, "Baked player's Udon Program Source is not assigned.");
+                Assert.NotZero(backingBehaviour.ProgramId, "Baked player's serialized Udon program is not assigned.");
+            }
+            finally
+            {
+                Selection.activeObject = null;
+
+                if (!hadProgramAsset && string.IsNullOrEmpty(generatedSerializedProgramPath))
+                {
+                    var programAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(MfvBakeUtility.UdonSharpPlayerProgramAssetPath);
+                    if (programAsset != null && AssetDatabase.TryGetGUIDAndLocalFileIdentifier(programAsset, out var programGuid, out long _))
+                    {
+                        generatedSerializedProgramPath = $"Assets/SerializedUdonPrograms/{programGuid}.asset";
+                    }
+                }
+
+                if (!hadDefaultBakeOutput && AssetDatabase.IsValidFolder(MfvBakeUtility.DefaultOutputFolder))
+                {
+                    AssetDatabase.DeleteAsset(MfvBakeUtility.DefaultOutputFolder);
+                }
+
+                if (!hadProgramAsset && AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(MfvBakeUtility.UdonSharpPlayerProgramAssetPath) != null)
+                {
+                    AssetDatabase.DeleteAsset(MfvBakeUtility.UdonSharpPlayerProgramAssetPath);
+                }
+
+                if (!string.IsNullOrEmpty(generatedSerializedProgramPath) && AssetDatabase.LoadAssetAtPath<Object>(generatedSerializedProgramPath) != null)
+                {
+                    AssetDatabase.DeleteAsset(generatedSerializedProgramPath);
+                }
+
+                if (!hadProgramAssetFolder && AssetDatabase.IsValidFolder(MfvBakeUtility.UdonSharpProgramAssetFolder))
+                {
+                    AssetDatabase.DeleteAsset(MfvBakeUtility.UdonSharpProgramAssetFolder);
+                }
+
+                if (!hadDefaultBakeRoot && AssetDatabase.IsValidFolder(DefaultBakeRoot))
+                {
+                    AssetDatabase.DeleteAsset(DefaultBakeRoot);
+                }
+            }
+        }
+#endif
 
         private static MfvBakeResult BakePreviewFixture(
             MfvPreviewSmokeFixtureBuilder.FixtureContext context,

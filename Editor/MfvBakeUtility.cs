@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+#if UDONSHARP
+using System.Reflection;
+#endif
 using ManeuverForVRSL;
 using StageLightManeuver;
 using UnityEditor;
@@ -10,11 +13,21 @@ using UnityEngine.Timeline;
 using VRSL;
 using Debug = UnityEngine.Debug;
 
+#if UDONSHARP
+using UdonSharp;
+using UdonSharp.Compiler;
+using UdonSharpEditor;
+#endif
+
 namespace ManeuverForVRSL.Editor
 {
     public static class MfvBakeUtility
     {
         public const string DefaultOutputFolder = "Assets/ManeuverForVRSL/Baked";
+#if UDONSHARP
+        public const string UdonSharpProgramAssetFolder = "Assets/ManeuverForVRSL/UdonSharpPrograms";
+        public const string UdonSharpPlayerProgramAssetPath = UdonSharpProgramAssetFolder + "/MfvVRSLTimelinePlayer.asset";
+#endif
 
         public static MfvBakeResult Bake(PlayableDirector director, MfvBakeSettings settings, string outputFolder = DefaultOutputFolder)
         {
@@ -77,7 +90,104 @@ namespace ManeuverForVRSL.Editor
             player.fixtures = result.fixtures;
             result.bakedAsset.CopyTo(player);
             EditorUtility.SetDirty(player);
+
+#if UDONSHARP
+            var backingBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(player);
+            if (backingBehaviour != null)
+            {
+                EnsurePlayerProgramAsset();
+                UdonSharpEditorUtility.CopyProxyToUdon(player);
+                EditorUtility.SetDirty(backingBehaviour);
+            }
+#endif
         }
+
+#if UDONSHARP
+        public static UdonSharpProgramAsset EnsurePlayerProgramAsset()
+        {
+            var programAsset = UdonSharpProgramAsset.GetProgramAssetForClass(typeof(MfvVRSLTimelinePlayer));
+            if (programAsset == null)
+            {
+                programAsset = LoadOrCreatePlayerProgramAsset();
+            }
+
+            if (programAsset == null)
+            {
+                Debug.LogError("[ManeuverForVRSL] Failed to create the UdonSharp program asset for MfvVRSLTimelinePlayer.");
+                return null;
+            }
+
+            if (programAsset.ScriptVersion < UdonSharpProgramVersion.CurrentVersion)
+            {
+                programAsset.ScriptVersion = UdonSharpProgramVersion.CurrentVersion;
+            }
+
+            if (programAsset.CompiledVersion < UdonSharpProgramVersion.CurrentVersion)
+            {
+                UdonSharpCompilerV1.CompileSync();
+            }
+
+            return programAsset;
+        }
+
+        private static UdonSharpProgramAsset LoadOrCreatePlayerProgramAsset()
+        {
+            var sourceScript = FindMonoScriptForType<MfvVRSLTimelinePlayer>();
+            if (sourceScript == null)
+            {
+                Debug.LogError("[ManeuverForVRSL] Could not locate the MfvVRSLTimelinePlayer MonoScript for UdonSharp setup.");
+                return null;
+            }
+
+            EnsureFolder(UdonSharpProgramAssetFolder);
+            var programAsset = AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(UdonSharpPlayerProgramAssetPath);
+            if (programAsset == null)
+            {
+                programAsset = ScriptableObject.CreateInstance<UdonSharpProgramAsset>();
+                programAsset.name = nameof(MfvVRSLTimelinePlayer);
+                programAsset.sourceCsScript = sourceScript;
+                AssetDatabase.CreateAsset(programAsset, UdonSharpPlayerProgramAssetPath);
+            }
+            else if (programAsset.sourceCsScript != sourceScript)
+            {
+                programAsset.sourceCsScript = sourceScript;
+            }
+
+            if (programAsset.ScriptVersion < UdonSharpProgramVersion.CurrentVersion)
+            {
+                programAsset.ScriptVersion = UdonSharpProgramVersion.CurrentVersion;
+            }
+
+            EditorUtility.SetDirty(programAsset);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.ImportAsset(UdonSharpPlayerProgramAssetPath, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+            ClearUdonSharpProgramAssetCache();
+
+            return UdonSharpProgramAsset.GetProgramAssetForClass(typeof(MfvVRSLTimelinePlayer))
+                ?? AssetDatabase.LoadAssetAtPath<UdonSharpProgramAsset>(UdonSharpPlayerProgramAssetPath);
+        }
+
+        private static MonoScript FindMonoScriptForType<T>() where T : MonoBehaviour
+        {
+            var targetType = typeof(T);
+            foreach (var guid in AssetDatabase.FindAssets($"{targetType.Name} t:MonoScript"))
+            {
+                var script = AssetDatabase.LoadAssetAtPath<MonoScript>(AssetDatabase.GUIDToAssetPath(guid));
+                if (script != null && script.GetClass() == targetType)
+                {
+                    return script;
+                }
+            }
+
+            return null;
+        }
+
+        private static void ClearUdonSharpProgramAssetCache()
+        {
+            var method = typeof(UdonSharpProgramAsset).GetMethod("ClearProgramAssetCache", BindingFlags.Static | BindingFlags.NonPublic);
+            method?.Invoke(null, null);
+        }
+#endif
 
         private static Dictionary<VRStageLighting_DMX_Static, List<MfvVRSLFrame>> SampleFrames(
             PlayableDirector director,
