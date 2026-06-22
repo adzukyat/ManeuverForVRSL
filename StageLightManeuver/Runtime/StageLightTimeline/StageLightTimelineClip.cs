@@ -106,6 +106,36 @@ namespace StageLightManeuver
             return types.Distinct().ToList();
         }
 
+        public bool InitializeFixtureProperty(PlayableDirector playabledirector, SlmProperty property, bool logMissingBinding = false)
+        {
+            if (property == null || playabledirector == null || playabledirector.playableAsset == null)
+            {
+                return false;
+            }
+
+            var initializerBindings = CollectBoundFixtureBases(playabledirector, logMissingBinding, out _);
+            if (initializerBindings.Count == 0)
+            {
+                return false;
+            }
+
+            var tempQueueData = new StageLightQueueData
+            {
+                stageLightProperties = new List<SlmProperty>
+                {
+                    property
+                }
+            };
+
+            foreach (var initializerBinding in initializerBindings)
+            {
+                initializerBinding.InitializeTimelineProperties(tempQueueData);
+            }
+
+            EnsurePropertyValues(tempQueueData);
+            return true;
+        }
+
         private bool AddAllProperty(PlayableDirector playabledirector, StageLightQueueData queData, bool logMissingBinding)
         {
             var changed = false;

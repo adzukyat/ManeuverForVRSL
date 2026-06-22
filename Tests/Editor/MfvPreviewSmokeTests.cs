@@ -265,6 +265,48 @@ namespace ManeuverForVRC.Tests
         }
 
         [Test]
+        public void Level3_ManualAddProperty_DoesNotAutoAddLightColor()
+        {
+            var timeline = ScriptableObject.CreateInstance<TimelineAsset>();
+            var directorObject = new GameObject("Manual Add Property Director");
+            var fixtureObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            try
+            {
+                var track = timeline.CreateTrack<StageLightTimelineTrack>(null, "SLM Manual Add");
+                var clip = track.CreateClip<StageLightTimelineClip>();
+                var slmClip = (StageLightTimelineClip)clip.asset;
+
+                var director = directorObject.AddComponent<PlayableDirector>();
+                director.playableAsset = timeline;
+                director.playOnAwake = false;
+                director.timeUpdateMode = DirectorUpdateMode.Manual;
+
+                var stageLightFixture = fixtureObject.AddComponent<StageLightFixture>();
+                var channel = fixtureObject.AddComponent<MfvVRSLFixtureChannel>();
+                var vrslFixture = fixtureObject.AddComponent<VRSL.VRStageLighting_DMX_Static>();
+                vrslFixture.objRenderers = new[] { fixtureObject.GetComponent<MeshRenderer>() };
+                vrslFixture.panOffsetBlueGreen = 12f;
+                channel.vrslFixture = vrslFixture;
+                stageLightFixture.Init();
+                director.SetGenericBinding(track, stageLightFixture);
+
+                Assert.IsTrue(SlmEditorUtility.AddPropertyInClip(slmClip, typeof(PanProperty), director, false));
+                Assert.DoesNotThrow(() => new StageLightTimelineClipEditor().OnClipChanged(clip));
+
+                var pan = slmClip.StageLightQueueData.TryGetActiveProperty<PanProperty>();
+                Assert.NotNull(pan);
+                Assert.That(pan.rollTransform.value.constant, Is.EqualTo(-12f).Within(0.0001f));
+                Assert.IsNull(slmClip.StageLightQueueData.TryGetActiveProperty<LightColorProperty>());
+            }
+            finally
+            {
+                Object.DestroyImmediate(timeline);
+                Object.DestroyImmediate(directorObject);
+                Object.DestroyImmediate(fixtureObject);
+            }
+        }
+
+        [Test]
         public void Level4_BakeConsistency_MatchesPreviewAndKeepsUploadTimeline()
         {
             var context = MfvPreviewSmokeFixtureBuilder.OpenFreshScene();

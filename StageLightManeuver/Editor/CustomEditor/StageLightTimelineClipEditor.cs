@@ -52,7 +52,6 @@ namespace StageLightManeuver
             if (stageLightTimelineClip == null)
                 return;
             stageLightTimelineClip.EnsureRequiredProperties();
-            EnsureFixtureProperties(stageLightTimelineClip);
             ResolveTrack(stageLightTimelineClip, clip);
             GetGradientTexture(clip, true);
             if (stageLightTimelineClip.referenceStageLightProfile != null && stageLightTimelineClip.syncClipName)

@@ -232,12 +232,29 @@ namespace StageLightManeuver
                         manualLightArrayProperty.initialValue.intensity = lightIntensityProperty.lightToggleIntensity.value.constant;
                     }
                 }
+                var changedByFixtureInitialization =
+                    TryInitializeAddedPropertyFromFixture(serializedObject, property);
                 stageLightProperties.Add(property);
                 ClearCache();
 
                 serializedObject.ApplyModifiedProperties();
                 EditorUtility.SetDirty(serializedObject.targetObject);
+                if (changedByFixtureInitialization)
+                {
+                    serializedObject.Update();
+                }
             }
+        }
+
+        private static bool TryInitializeAddedPropertyFromFixture(SerializedObject serializedObject, SlmProperty property)
+        {
+            if (serializedObject?.targetObject is not StageLightTimelineClip timelineClip)
+            {
+                return false;
+            }
+
+            var director = TimelineEditor.masterDirector;
+            return timelineClip.InitializeFixtureProperty(director, property, false);
         }
 
         private static List<Type> GetAddablePropertyTypes(SerializedObject serializedObject)

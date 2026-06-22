@@ -4,6 +4,8 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.Timeline;
+using UnityEngine.Playables;
 using UnityEngine.Timeline;
 
 namespace StageLightManeuver
@@ -358,21 +360,40 @@ namespace StageLightManeuver
         }
         public static bool AddPropertyInClip(StageLightTimelineClip stageLightTimelineClip, string propertyTypeName, bool saveAssets = true)
         {
-            Undo.RecordObject(stageLightTimelineClip, "Add Property");
-            EditorUtility.SetDirty(stageLightTimelineClip);
             var type = GetTypeByClassName(propertyTypeName);
-           
+            return AddPropertyInClip(stageLightTimelineClip, type, TimelineEditor.masterDirector, saveAssets);
+        }
 
-            var result =stageLightTimelineClip.StageLightQueueData.TryAddProperty(type);
-            if (result && saveAssets)
+        public static bool AddPropertyInClip(StageLightTimelineClip stageLightTimelineClip, Type propertyType, PlayableDirector playableDirector, bool saveAssets = true)
+        {
+            if (stageLightTimelineClip == null || propertyType == null)
             {
-                EditorUtility.SetDirty(stageLightTimelineClip);
-
-               AssetDatabase.SaveAssets();
-                   
+                return false;
             }
-            
-            return result;
+
+            Undo.RecordObject(stageLightTimelineClip, "Add Property");
+            var queueData = stageLightTimelineClip.StageLightQueueData;
+            if (queueData.stageLightProperties.Any(property => property != null && property.GetType() == propertyType))
+            {
+                return false;
+            }
+
+            var property = Activator.CreateInstance(propertyType, new object[] { }) as SlmProperty;
+            if (property == null)
+            {
+                return false;
+            }
+
+            stageLightTimelineClip.InitializeFixtureProperty(playableDirector, property, false);
+            queueData.stageLightProperties.Add(property);
+            EditorUtility.SetDirty(stageLightTimelineClip);
+
+            if (saveAssets)
+            {
+               AssetDatabase.SaveAssets();
+            }
+
+            return true;
         }
     }
 }
